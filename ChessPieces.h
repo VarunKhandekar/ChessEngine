@@ -4,30 +4,54 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cmath>
+#include "helpers.h"
 
+std::ostream& operator << (std::ostream&, Colour);
 
-enum Colour{
-	WHITE = 0,
-	BLACK = 1,
-};
+class ChessBoard;
+
 
 class ChessPiece {
 	protected:
-		std::string position;
+		char* position;
 		Colour colour;
 		std::vector<std::string> potential_moves;
 		
-
 		// TODO make this pure virtual
-		virtual void getPotentialMoves(std::string);
+		//virtual bool isLegalMove(std::string, std::string, const ChessBoard&) = 0;
+
 		//function to move piece.
 		//position changes, potential moves update
 
 	public:
+		//std::string position;
 		// constructor
-		ChessPiece(std::string, Colour);
+		ChessPiece(char*, Colour);
+
 		//destructor
 		virtual ~ChessPiece();
+
+		friend std::ostream& operator << (std::ostream&, ChessPiece*);
+
+		friend std::ostream& operator << (std::ostream&, ChessPiece&);
+
+	
+		/* A pure virtual function to provide the skeleton for printing the piece colour and piece type */
+		virtual void print(std::ostream&) = 0;
+		virtual void calculatePotentialMoves(const ChessBoard&) = 0;
+		virtual bool isLegalMove(char*, const ChessBoard&) = 0;
+
+		/* A pure virtual function to provide the skeleton for printing the appropriate piece letter (FEN notation) */
+		virtual void print_letter(std::ostream&) = 0;
+		
+		bool validBoardPosition(int, int);
+
+		Colour getColour();
+
+		std::vector<std::string>& getPotentialMoves();
+
+		void displayPotentialMoves();
 
 };
 
@@ -35,37 +59,70 @@ class ChessPiece {
 class King : public ChessPiece {
 
 	public:
-		King(std::string, Colour);
+		King(char*, Colour, bool);
 		//TODO add overrides to these for all child classes
-		void getPotentialMoves(std::string);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
+
+
+
 		~King() override;
+		//bool isLegalMove(std::string, std::string, const ChessBoard&) override;
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
+
+		bool hasMoved();
+	
+	private:
+		bool has_moved;
 }; 
 
 
 class Queen : public ChessPiece {
 
 	public:
-		Queen(std::string, Colour);
-		void getPotentialMoves(std::string);
+		Queen(char*, Colour);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
 		~Queen() override;
+
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
+	
+
 }; 
 
 
 class Rook : public ChessPiece {
 
 	public:
-		Rook(std::string, Colour);
-		void getPotentialMoves(std::string);
+		Rook(char*, Colour, bool);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
 		~Rook() override;
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
+
+		bool hasMoved();
+
+		bool isKingSide();
+
+	private:
+		bool has_moved;
+		bool king_side;
 }; 
 
 
 class Bishop : public ChessPiece {
 
 	public:
-		Bishop(std::string, Colour);
-		void getPotentialMoves(std::string);
+		Bishop(char*, Colour);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
 		~Bishop() override;
+		
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
 
 };
 
@@ -73,9 +130,14 @@ class Bishop : public ChessPiece {
 class Knight : public ChessPiece {
 
 	public:
-		Knight(std::string, Colour);
-		void getPotentialMoves(std::string);
+		Knight(char*, Colour);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
 		~Knight() override;
+
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
+	
 
 };
 
@@ -83,14 +145,18 @@ class Knight : public ChessPiece {
 class Pawn : public ChessPiece {
 
 	public:
-		Pawn(std::string, Colour);
-		void getPotentialMoves(std::string);
+		Pawn(char*, Colour, bool);
+		void calculatePotentialMoves(const ChessBoard&) override;
+		bool isLegalMove(char*, const ChessBoard&);
 		~Pawn() override;
 
-	//private:
-	//	bool has_moved;
+		void print(std::ostream&) override;
+		void print_letter(std::ostream&) override;
+		
+	private:
+		bool has_moved;
+		
 
-}; 
-
+};
 
 #endif
