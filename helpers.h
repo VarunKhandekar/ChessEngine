@@ -3,18 +3,17 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
 
 /* Helper: gets the row number from a position */
-int posToRow(char*);
+int posToRow(std::string);
 
 
 /* Helper: gets the col number from a position */
-int posToCol(char*);
+int posToCol(std::string);
 
 
 /* Helper: converts a rown and column to a string position */
-//char* rowColToPos(int, int);
+std::string rowColToPos(int, int);
 
 
 enum Colour{

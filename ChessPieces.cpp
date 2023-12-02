@@ -5,29 +5,20 @@
  * PARENT CLASS: ChessPiece 
  * ============================== */
 //constructor
-ChessPiece::ChessPiece(char* _position, Colour _colour) : position(_position), colour(_colour){
+ChessPiece::ChessPiece(Colour _colour) : colour(_colour){
 }
 
 
 ChessPiece::~ChessPiece(){
 }
 
+//ChessPiece* ChessPiece::copy(){
+//}
 
 Colour ChessPiece::getColour(){
 	return colour;
 }
 
-
-std::vector<std::string>& ChessPiece::getPotentialMoves(){
-	return potential_moves;
-}
-
-void ChessPiece::displayPotentialMoves(){
-	for (int i=0; i<static_cast<char>(potential_moves.size()); i++){
-		std::cout << potential_moves[i] << "; ";
-	}
-	std::cout << std::endl;
-}
 
 std::ostream& operator << (std::ostream& os, ChessPiece* piece){
 	piece->print(os);
@@ -56,9 +47,7 @@ bool ChessPiece::validBoardPosition(int row, int col){
  * CHILD CLASS: King 
  * ============================== */
 //constructor
-King::King(char* _position, Colour _colour, bool _has_moved) : 
-	ChessPiece(_position, _colour), has_moved(_has_moved) {
-	//calculatePotentialMoves(_position, chessboard);
+King::King(Colour _colour) : ChessPiece(_colour) {
 }
 
 
@@ -66,47 +55,14 @@ King::~King(){
 }
 
 
-bool King::hasMoved(){
-	return has_moved;
+ChessPiece* King::copy(){
+	return new King(*this);
 }
 
 
-void King::calculatePotentialMoves(const ChessBoard& chessboard){
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-	for (int row_delta = -1; row_delta <= 1; row_delta++){
-		for (int col_delta = -1; col_delta <= 1; col_delta++){
-			// ignore the case where no move is made
-			if (!(row_delta == 0 && col_delta == 0)){
-				int new_row = row_position + row_delta;
-				int new_col = col_position + col_delta; 
-
-				// if the new postion is valid and not blocked by a piece of the same colour,
-				// add it to our vector of potential moves
-				if (validBoardPosition(new_row, new_col)){
-
-					if (chessboard.board[new_row][new_col]->getColour()!=colour){
-						//std::cout << rowColToPos(new_row, new_col) << std::endl;
-						potential_moves.push_back(rowColToPos(new_row, new_col));
-					}
-				}
-			}
-		}
-	}
-	// check if the king has moved. If it hasn't there is the potential for it to castle
-	if (!has_moved){
-
-		potential_moves.push_back(rowColToPos(row_position, col_position + 2)); //castle king's side
-		potential_moves.push_back(rowColToPos(row_position, col_position - 2)); //castle queen's side
-	}
-}
-
-bool King::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -119,13 +75,19 @@ bool King::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int row_delta = end_row - start_row;
 	int col_delta = end_col - start_col;
 
-	if (has_moved){
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
+	// if you can't castle
+	if (!cb.white_castle_k || !cb.white_castle_q){
 		if (std::abs(row_delta) > 1 || std::abs(col_delta) > 1){
 			return false;
 		}
 	}
+	// if you can castle
 	else{
-		// ensure the castling move is correct
+		// ensure the possible castling move is correct
 		if (std::abs(col_delta >= 2) && row_delta != 0){
 			return false;
 		}
@@ -142,19 +104,23 @@ bool King::isLegalMove(char* end_pos, const ChessBoard& cb){
 				continue;
 			}
 			//check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
 			//check if the piece is blocked
-			if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour){
-				return false;
+			if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+					return false;
+				}			
 			}
-			//check for the castle move
+			//check for the castle move. By this stage, row_delta would be 0 anyway so no need to check for that
 			if (std::abs(col_delta)==2){
-				if (cb.board[start_row+row_change][start_col+col_change]!=nullptr){
+				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!=nullptr){
 					return false;
 				}
 				// TODO add recursive logic here for checking if castling is feasible. Will need check
@@ -162,17 +128,9 @@ bool King::isLegalMove(char* end_pos, const ChessBoard& cb){
 		}
 	}
 
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
-	}
-	
-	if (colour==WHITE){
-		//cb.white_king_position = end_pos;	
-	}
-	else {
-		//cb.black_king_position = end_pos;	
-	}
+
+	// NOTE: if a king move is feasible, we are good to update the king_position
+	// so when we subsequently make the move on the board itself, no further tweaks are needed
 	return true;
 }
 
@@ -201,10 +159,8 @@ void King::print_letter(std::ostream& os){
  * CHILD CLASS: Queen 
  * ============================== */
 //constructor
-Queen::Queen(char* _position, Colour _colour) :
-	ChessPiece(_position, _colour) {
-	//calculatePotentialMoves(_position, chessboard);
-
+Queen::Queen(Colour _colour) :
+	ChessPiece(_colour) {
 }
 
 
@@ -212,38 +168,14 @@ Queen::~Queen(){
 }
 
 
-void Queen::calculatePotentialMoves(const ChessBoard& chessboard){
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-
-	for (int row_delta = -7; row_delta <= 7; row_delta++){
-		for (int col_delta = -7; col_delta <= 7; col_delta++){
-			// ignore the case where no move is made
-			if (!(row_delta == 0 && col_delta == 0)){
-				int new_row = row_position + row_delta;
-				int new_col = col_position + col_delta; 
-				// if the new postion is valid, add it to our vector of potential moves
-				if (validBoardPosition(new_row, new_col)){
-					// horizontals, verticals, diagonals
-					if (chessboard.board[new_row][new_col]->getColour()!=colour){
-					}
-
-					if (new_row == row_position || new_col == col_position || std::abs(row_delta) == std::abs(col_delta)){
-						//std::cout << rowColToPos(new_row, new_col) << std::endl;
-						potential_moves.push_back(rowColToPos(new_row, new_col));
-					}
-				}
-			}
-		}
-	}
+ChessPiece* Queen::copy(){
+	return new Queen(*this);
 }
 
-bool Queen::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+
+bool Queen::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -257,10 +189,14 @@ bool Queen::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int col_delta = end_col - start_col;
 
 	// check for validity of the move in terms of file and rank
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
 	// horizontals, verticals, diagonals
-	if ((row_delta != 0 && std::abs(col_delta) > 0) || 
-			(col_delta != 0 && std::abs(row_delta) > 0)|| 
-			 std::abs(row_delta) != std::abs(col_delta)){
+	if (!((row_delta == 0 && std::abs(col_delta) > 0) || 
+			(col_delta == 0 && std::abs(row_delta) > 0)|| 
+			 std::abs(row_delta) == std::abs(col_delta))){
 		return false;
 	}
 
@@ -273,28 +209,57 @@ bool Queen::isLegalMove(char* end_pos, const ChessBoard& cb){
 				continue;
 			}
 			// check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
-			// check if the piece is blocked
-			// first filter on legitimate moves for the piece. 
-			// If legitimate, then check for a blockage (horizontals, verticals, diagonals)
-			if ((row_change+start_row) == start_row || 
-					(col_change+start_col) == start_col || 
-					std::abs(row_change) == std::abs(col_change)){
-				if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour){
-					return false;
+			// check if the piece is blocked 
+			// If legitimate, then check for a blockage 
+			// Extra queen logic -> see if the desired move is diagonal or not
+			if (std::abs(row_delta)==std::abs(col_delta)){
+				if (row_change == col_change){
+					// case for if we are at our target square
+					if (row_change_signed == row_delta && col_change_signed == col_delta){
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+							if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+								return false;
+							}			
+						}
+					}
+					// case for if we are en route to target square. Check if not blocked by something
+					else { 
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+							return false;
+						}
+					}
 				}
-			} //no need for an else here, as we would just continue on to the next item in our loop		
+			}
+			// we get to here if the hypothesised move is not illegal and is not a diagonal move
+			// in such a case, either rows, or cols, will be 0. So a simple else should suffice
+			else {
+				if ((row_change+start_row) == start_row || 
+						(col_change+start_col) == start_col){
+					// case for if we are at our target square
+					if (row_change_signed == row_delta && col_change_signed == col_delta){
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+							if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+								return false;
+							}
+						}
+					}
+					// case for if we are en route to target square. Check if not blocked by something
+					else { 
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+							return false;
+						}
+					}	
+				}
+			}
 		}
-	}
-	
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
 	}
 	return true;
 }
@@ -324,15 +289,8 @@ void Queen::print_letter(std::ostream& os){
  * CHILD CLASS: Rook 
  * ============================== */
 //constructor
-Rook::Rook(char* _position, Colour _colour, bool _has_moved) : 
-	ChessPiece(_position, _colour), has_moved(_has_moved) {
-	//calculatePotentialMoves(_position, chessboard);
-	if (_position[0] == 'H'){
-		king_side = true;
-	}
-	else {
-		king_side = false;
-	}
+Rook::Rook(Colour _colour, bool _king_side) : 
+	ChessPiece(_colour), king_side(_king_side) {
 }
 
 
@@ -340,8 +298,8 @@ Rook::~Rook(){
 }
 
 
-bool Rook::hasMoved(){
-	return has_moved;
+ChessPiece* Rook::copy(){
+	return new Rook(*this);
 }
 
 
@@ -350,35 +308,9 @@ bool Rook::isKingSide(){
 }
 
 
-void Rook::calculatePotentialMoves(const ChessBoard& chessboard){	
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-
-	for (int row_delta = -7; row_delta <= 7; row_delta++){
-		for (int col_delta = -7; col_delta <= 7; col_delta++){
-			// ignore the case where no move is made
-			if (!(row_delta == 0 && col_delta == 0)){
-				int new_row = row_position + row_delta;
-				int new_col = col_position + col_delta; 
-				// if the new postion is valid, add it to our vector of potential moves
-				if (validBoardPosition(new_row, new_col)){
-					// only up or down moves are valid
-					if (new_row == row_position || new_col == col_position){
-						//std::cout << rowColToPos(new_row, new_col) << std::endl;
-						potential_moves.push_back(rowColToPos(new_row, new_col));
-					}
-				}
-			}
-		}
-	}
-}
-
-bool Rook::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+bool Rook::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -392,6 +324,10 @@ bool Rook::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int col_delta = end_col - start_col;
 
 	// check for validity of the move in terms of file and rank
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
 	// horizontals, verticals
 	if ((row_delta != 0 && std::abs(col_delta) > 0) || 
 			(col_delta != 0 && std::abs(row_delta) > 0)){
@@ -407,28 +343,45 @@ bool Rook::isLegalMove(char* end_pos, const ChessBoard& cb){
 				continue;
 			}
 			// check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
-			// check if the piece is blocked
-			// first filter on legitimate moves for the piece. 
+			// check if the piece is blocked 
 			// If legitimate, then check for a blockage (horizontals, verticals)
 			if ((row_change+start_row) == start_row || 
 					(col_change+start_col) == start_col){
-				if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour){
-					return false;
+				// case for if we are at our target square
+				if (row_change_signed == row_delta && col_change_signed == col_delta){
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+							return false;
+						}
+					}
 				}
-			} //no need for an else here, as we would just continue on to the next item in our loop		
+				// case for if we are en route to target square. Check if not blocked by something
+				else { 
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+						return false;
+					}
+				}	
+			}
 		}
 	}
 	
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
-	}
+	
+
+	//if (colour==WHITE){
+	//	king_side ? cb.white_castle_k = false : cb.white_castle_q = false;
+	//}
+	//else {
+	//	king_side ? cb.black_castle_k = false : cb.black_castle_q = false;
+	//}
+
 	return true;
 }
 
@@ -457,10 +410,7 @@ void Rook::print_letter(std::ostream& os){
  * CHILD CLASS: Bishop
  * ============================== */
 //constructor
-Bishop::Bishop(char* _position, Colour _colour) :
-	ChessPiece(_position, _colour) {
-	//calculatePotentialMoves(_position, chessboard);
-
+Bishop::Bishop(Colour _colour) : ChessPiece(_colour) {
 }
 
 
@@ -468,35 +418,14 @@ Bishop::~Bishop(){
 }
 
 
-void Bishop::calculatePotentialMoves(const ChessBoard& chessboard){
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-
-	for (int row_delta = -7; row_delta <= 7; row_delta++){
-		for (int col_delta = -7; col_delta <= 7; col_delta++){
-			// ignore the case where no move is made
-			if (!(row_delta == 0 && col_delta == 0)){
-				int new_row = row_position + row_delta;
-				int new_col = col_position + col_delta; 
-				// if the new postion is valid, add it to our vector of potential moves
-				if (validBoardPosition(new_row, new_col)){
-					// only diagonal moves are valid
-					if (std::abs(row_delta) == std::abs(col_delta)){
-						//std::cout << rowColToPos(new_row, new_col) << std::endl;
-						potential_moves.push_back(rowColToPos(new_row, new_col));
-					}
-				}
-			}	
-		}
-	}
+ChessPiece* Bishop::copy(){
+	return new Bishop(*this);
 }
 
-bool Bishop::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+
+bool Bishop::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -510,6 +439,10 @@ bool Bishop::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int col_delta = end_col - start_col;
 	
 	// check for validity of the move in terms of file and rank
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
 	// diagonals only
 	if (std::abs(row_delta) != std::abs(col_delta)){
 		return false;
@@ -524,27 +457,35 @@ bool Bishop::isLegalMove(char* end_pos, const ChessBoard& cb){
 				continue;
 			}
 			// check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
 			// check if the piece is blocked
-			// first filter on legitimate moves for the piece. 
 			// If legitimate, then check for a blockage (only diagonals)
-			if (std::abs(row_change) == std::abs(col_change)){
-				if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour){
-					return false;
+			if (row_change == col_change){
+				// case for if we are at our target square
+				if (row_change_signed == row_delta && col_change_signed == col_delta){
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+							return false;
+						}			
+					}
 				}
-			} //no need for an else here, as we would just continue on to the next item in our loop		
+				// case for if we are en route to target square. Check if not blocked by something
+				else { 
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+						return false;
+					}
+				}
+			}
 		}
 	}
-	
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
-	}
+
 	return true;
 }
 
@@ -573,9 +514,7 @@ void Bishop::print_letter(std::ostream& os){
  * CHILD CLASS: Knight 
  * ============================== */
 //constructor
-Knight::Knight(char* _position, Colour _colour) :
-	ChessPiece(_position, _colour) {
-	//calculatePotentialMoves(_position, chessboard);
+Knight::Knight(Colour _colour) : ChessPiece(_colour) {
 }
 
 
@@ -583,38 +522,14 @@ Knight::~Knight(){
 }
 
 
-void Knight::calculatePotentialMoves(const ChessBoard& chessboard){
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-
-	for (int row_delta = -2; row_delta <= 2; row_delta++){
-		for (int col_delta = -2; col_delta <= 2; col_delta++){
-			// ignore the case where no move is made
-			if (!(row_delta == 0 && col_delta == 0)){
-				int new_row = row_position + row_delta;
-				int new_col = col_position + col_delta; 
-				// if the new postion is valid, add it to our vector of potential moves
-				if (validBoardPosition(new_row, new_col)){
-					// only diagonal mvoes are valid
-					if ((std::abs(row_delta) == 2 && std::abs(col_delta) == 1) || 
-							(std::abs(row_delta) == 1 && std::abs(col_delta) == 2) ){
-						if (chessboard.board[new_row][new_col]->getColour()!=colour){
-							//std::cout << rowColToPos(new_row, new_col) << std::endl;
-							potential_moves.push_back(rowColToPos(new_row, new_col));
-						}					
-					}
-				}
-			}	
-		}
-	}
+ChessPiece* Knight::copy(){
+	return new Knight(*this);
 }
 
-bool Knight::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+
+bool Knight::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -628,9 +543,13 @@ bool Knight::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int col_delta = end_col - start_col;
 
 	// check for validity of the move in terms of file and rank
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
 	// special 2x1 knight move
-	if ((std::abs(row_delta) == 2 && std::abs(col_delta) != 1) || 
-			(std::abs(col_delta) == 2 && std::abs(row_delta) != 1)){
+	if (!((std::abs(row_delta) == 2 && std::abs(col_delta) == 1) || 
+				(std::abs(col_delta) == 2 && std::abs(row_delta) == 1))){
 		return false;
 	}
 
@@ -643,28 +562,27 @@ bool Knight::isLegalMove(char* end_pos, const ChessBoard& cb){
 				continue;
 			}
 			// check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
 			// check if the piece is blocked
-			// first filter on legitimate moves for the piece. 
 			// If legitimate, then check for a blockage (special knight move)
-			if ((std::abs(row_change) == 2 && std::abs(col_change) == 1) || 
-				(std::abs(col_change) == 2 && std::abs(row_change) == 1)){
-				if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour){
-					return false;
+			if ((row_change == 2 && col_change == 1) || 
+				(col_change == 2 && row_change == 1)){
+				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+						return false;
+					}			
 				}
-			} //no need for an else here, as we would just continue on to the next item in our loop		
+			}
 		}
 	}
 	
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
-	}
 	return true;
 }
 
@@ -693,9 +611,8 @@ void Knight::print_letter(std::ostream& os){
  * CHILD CLASS: Pawn
  * ============================== */
 //constructor
-Pawn::Pawn(char* _position, Colour _colour, bool _has_moved) : 
-	ChessPiece(_position, _colour), has_moved(_has_moved) {
-	//calculatePotentialMoves(_position, chessboard);
+Pawn::Pawn(Colour _colour, bool _has_moved) : 
+	ChessPiece(_colour), has_moved(_has_moved) {
 }
 
 
@@ -703,51 +620,14 @@ Pawn::~Pawn(){
 }
 
 
-void Pawn::calculatePotentialMoves(const ChessBoard& chessboard){
-	int row_position = posToRow(position);
-	int col_position = posToCol(position);
-
-	//std::cout << row_position << std::endl;
-	//std::cout << col_position << std::endl;
-	if (colour == WHITE){
-		// White moves 'up the board' i.e. from higher row index to lower. Go to -1 to prevent a horizontal move featuring
-		int row_delta = -1;
-		for (int col_delta = -1; col_delta <= 1; col_delta++){
-			int new_row = row_position + row_delta;
-			int new_col = col_position + col_delta; 
-			// if the new postion is valid, consider add it to our vector of potential moves
-			if (validBoardPosition(new_row, new_col)){
-				potential_moves.push_back(rowColToPos(new_row, new_col));
-			}
-		}
-		// check if the pawn has moved yet. If it has not, it can only move one square at a time
-		if (!has_moved){
-			potential_moves.push_back(rowColToPos(row_position - 2, col_position));
-		}
-
-	}
-	else {
-		// Black moves 'down the board' i.e. from lower row index to higher. Go from 1 to prevent a horizontal move featuring
-		int row_delta = 1;
-		for (int col_delta = -1; col_delta <= 1; col_delta++){
-			int new_row = row_position + row_delta;
-			int new_col = col_position + col_delta; 
-			// if the new postion is valid, consider adding it to our vector of potential moves
-			if (validBoardPosition(new_row, new_col)){
-				// check if the pawn has moved yet. If it has, it can only move one square at a time
-				potential_moves.push_back(rowColToPos(new_row, new_col));	
-			}
-		}
-		// check if the pawn has moved yet. If it has not, it can only move one square at a time
-		if (!has_moved){
-			potential_moves.push_back(rowColToPos(row_position + 2, col_position));
-		}
-	}
+ChessPiece* Pawn::copy(){
+	return new Pawn(*this);
 }
 
-bool Pawn::isLegalMove(char* end_pos, const ChessBoard& cb){
-	int start_row = posToRow(position);
-	int start_col = posToCol(position);
+
+bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+	int start_row = posToRow(start_pos);
+	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
 	int end_col = posToCol(end_pos);
 
@@ -760,18 +640,23 @@ bool Pawn::isLegalMove(char* end_pos, const ChessBoard& cb){
 	int row_delta = end_row - start_row;
 	int col_delta = end_col - start_col;
 	
+	// no move case
+	if (row_delta == 0 && col_delta == 0){
+		return false;
+	}
+	
 	if (colour == WHITE){
 		// check for validity of the move
 		// if the piece has already moved, it can only move one row at a time
 		// white moves up the board i.e. to a lower row index
 		if (has_moved){
-			if (!(row_delta == -1 && std::abs(col_delta) == 1)){
+			if (!(row_delta == -1 && std::abs(col_delta) <= 1)){
 				return false;
 			}
 		}
 		else {
-			if (!((row_delta == 2 && col_delta == 0) || 
-					(row_delta == 1 && std::abs(col_delta)))){
+			if (!((row_delta == -2 && col_delta == 0) || 
+					(row_delta == -1 && std::abs(col_delta) <= 1))){
 				return false;
 			}
 		}
@@ -779,13 +664,13 @@ bool Pawn::isLegalMove(char* end_pos, const ChessBoard& cb){
 	else {
 		// black moves down the board i.e. to a higher row index
 		if (has_moved){
-			if (!(row_delta == 1 && std::abs(col_delta) == 1)){
+			if (!(row_delta == 1 && std::abs(col_delta) <= 1)){
 				return false;
 			}
 		}
 		else {
 			if (!((row_delta == 2 && col_delta == 0) || 
-					(row_delta == 1 && std::abs(col_delta)))){
+					(row_delta == 1 && std::abs(col_delta) <= 1))){
 				return false;
 			}
 		}
@@ -796,39 +681,45 @@ bool Pawn::isLegalMove(char* end_pos, const ChessBoard& cb){
 	// By this stage, we know the submitted move has the potential to be valid
 	for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
 		for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){
-			// skip the case where no move is made
-			if (row_change == 0 && col_change == 0){
+			// skip the case where the pawn makes no progress
+			if (row_change == 0){
 				continue;
 			}
 			// check if we need to move in the 'negative' direction for either rows or cols
+			int row_change_signed = row_change;
+			int col_change_signed = col_change;
 			if (std::signbit(row_delta)){
-				row_change*=-1;
+				row_change_signed = row_change*-1;
 			}
 			if (std::signbit(col_delta)){
-				col_change*=-1;
+				col_change_signed = col_change*-1;
 			}
 			// check if the piece is blocked
-			// first filter on legitimate moves for the piece. 
-			// If legitimate, then check for a blockage (a move straight up/down the board)
-			if ((col_change+start_col) == start_col){
-				if (cb.board[start_row+row_change][start_col+col_change]!=nullptr){
-					return false;
+			// Consider a move straight up/down the board
+			if (std::abs(col_delta)==0){
+				if ((start_col+col_change_signed) == start_col){
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!=nullptr){
+						return false;
+					}
 				}
 			}
-			// if the pawn takes. Can only take if it is an enemy colour
-			if (std::abs(col_change)==std::abs(row_change)){
-				if (cb.board[start_row+row_change][start_col+col_change]->getColour()==colour ||
-						cb.board[start_row+row_change][start_col+col_change]==nullptr){
-					return false;
-				}	
-			}		
+			// By this time, the move should be ok. This condition would then be for taking
+			else {
+				if (col_change==row_change){
+					//We first see if it is a nullptr
+					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]==nullptr){
+						return false;
+					}
+					// now we check if it's a piece of the same colour		
+					else if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+						return false;
+					}	
+				}		
+			}
 		}
 	}
 	
-	// check if making this move puts ourselves in check
-	if (cb.isCheck(colour)){
-		return false;
-	}
+	//has_moved = true;
 	return true;
 }
 
