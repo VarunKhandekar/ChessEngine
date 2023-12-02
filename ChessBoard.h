@@ -57,6 +57,7 @@ class ChessBoard {
 		/* Function to delete all heap pointers on our board and assign them to NULL */
 		void destroyBoard();
 
+		//bool kingMove(Colour);
 
 		
 		bool blockCheck(std::string, Colour);

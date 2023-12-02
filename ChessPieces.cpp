@@ -12,8 +12,6 @@ ChessPiece::ChessPiece(Colour _colour) : colour(_colour){
 ChessPiece::~ChessPiece(){
 }
 
-//ChessPiece* ChessPiece::copy(){
-//}
 
 Colour ChessPiece::getColour(){
 	return colour;
@@ -32,17 +30,6 @@ std::ostream& operator << (std::ostream& os, ChessPiece& piece){
 }
 
 
-/* A function to check if a position, given by a row and column, is a valid position on a chess board */
-bool ChessPiece::validBoardPosition(int row, int col){
-	if (row < 0 || row > 7 || col < 0 || col > 7){
-		return false;
-	}
-	else {
-		return true;
-	}
-}
-
-
 /* ==============================
  * CHILD CLASS: King 
  * ============================== */
@@ -52,11 +39,6 @@ King::King(Colour _colour) : ChessPiece(_colour) {
 
 
 King::~King(){
-}
-
-
-ChessPiece* King::copy(){
-	return new King(*this);
 }
 
 
@@ -79,22 +61,10 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 	if (row_delta == 0 && col_delta == 0){
 		return false;
 	}
-	// if you can't castle
-	if (!cb.white_castle_k || !cb.white_castle_q){
-		if (std::abs(row_delta) > 1 || std::abs(col_delta) > 1){
+	if (std::abs(row_delta) > 1 || std::abs(col_delta) > 1){
 			return false;
-		}
 	}
-	// if you can castle
-	else{
-		// ensure the possible castling move is correct
-		if (std::abs(col_delta >= 2) && row_delta != 0){
-			return false;
-		}
-		else if (std::abs(row_delta) > 1 || std::abs(col_delta) > 1){
-			return false;
-		}
-	}
+	
 
 	// check for blockages. By this stage, we know the submitted move has the potential to be valid
 	for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
@@ -123,14 +93,9 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!=nullptr){
 					return false;
 				}
-				// TODO add recursive logic here for checking if castling is feasible. Will need check
 			}
 		}
 	}
-
-
-	// NOTE: if a king move is feasible, we are good to update the king_position
-	// so when we subsequently make the move on the board itself, no further tweaks are needed
 	return true;
 }
 
@@ -165,11 +130,6 @@ Queen::Queen(Colour _colour) :
 
 
 Queen::~Queen(){
-}
-
-
-ChessPiece* Queen::copy(){
-	return new Queen(*this);
 }
 
 
@@ -298,11 +258,6 @@ Rook::~Rook(){
 }
 
 
-ChessPiece* Rook::copy(){
-	return new Rook(*this);
-}
-
-
 bool Rook::isKingSide(){
 	return king_side;
 }
@@ -373,15 +328,6 @@ bool Rook::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 		}
 	}
 	
-	
-
-	//if (colour==WHITE){
-	//	king_side ? cb.white_castle_k = false : cb.white_castle_q = false;
-	//}
-	//else {
-	//	king_side ? cb.black_castle_k = false : cb.black_castle_q = false;
-	//}
-
 	return true;
 }
 
@@ -415,11 +361,6 @@ Bishop::Bishop(Colour _colour) : ChessPiece(_colour) {
 
 
 Bishop::~Bishop(){
-}
-
-
-ChessPiece* Bishop::copy(){
-	return new Bishop(*this);
 }
 
 
@@ -522,11 +463,6 @@ Knight::~Knight(){
 }
 
 
-ChessPiece* Knight::copy(){
-	return new Knight(*this);
-}
-
-
 bool Knight::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -611,17 +547,11 @@ void Knight::print_letter(std::ostream& os){
  * CHILD CLASS: Pawn
  * ============================== */
 //constructor
-Pawn::Pawn(Colour _colour, bool _has_moved) : 
-	ChessPiece(_colour), has_moved(_has_moved) {
+Pawn::Pawn(Colour _colour) : ChessPiece(_colour) {
 }
 
 
 Pawn::~Pawn(){
-}
-
-
-ChessPiece* Pawn::copy(){
-	return new Pawn(*this);
 }
 
 
@@ -649,7 +579,7 @@ bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 		// check for validity of the move
 		// if the piece has already moved, it can only move one row at a time
 		// white moves up the board i.e. to a lower row index
-		if (has_moved){
+		if (start_row != 6){
 			if (!(row_delta == -1 && std::abs(col_delta) <= 1)){
 				return false;
 			}
@@ -663,7 +593,7 @@ bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 	}
 	else {
 		// black moves down the board i.e. to a higher row index
-		if (has_moved){
+		if (start_row != 1){
 			if (!(row_delta == 1 && std::abs(col_delta) <= 1)){
 				return false;
 			}
@@ -719,7 +649,6 @@ bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 		}
 	}
 	
-	//has_moved = true;
 	return true;
 }
 

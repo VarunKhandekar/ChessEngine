@@ -22,8 +22,6 @@ class ChessPiece {
 
 		//destructor
 		virtual ~ChessPiece();
-		
-		virtual ChessPiece* copy() = 0;
 
 		friend std::ostream& operator << (std::ostream&, ChessPiece*);
 
@@ -37,8 +35,6 @@ class ChessPiece {
 		/* A pure virtual function to provide the skeleton for printing the appropriate piece letter (FEN notation) */
 		virtual void print_letter(std::ostream&) = 0;
 		
-		bool validBoardPosition(int, int);
-
 		Colour getColour();
 
 };
@@ -49,9 +45,7 @@ class King : public ChessPiece {
 	public:
 		King(Colour);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
-
 		~King() override;
-		virtual ChessPiece* copy();
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
 
@@ -64,11 +58,8 @@ class Queen : public ChessPiece {
 		Queen(Colour);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
 		~Queen() override;
-		virtual ChessPiece* copy();
-
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
-	
 
 }; 
 
@@ -79,7 +70,6 @@ class Rook : public ChessPiece {
 		Rook(Colour, bool);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
 		~Rook() override;
-		virtual ChessPiece* copy();
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
 
@@ -96,7 +86,6 @@ class Bishop : public ChessPiece {
 		Bishop(Colour);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
 		~Bishop() override;
-		virtual ChessPiece* copy();
 		
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
@@ -110,11 +99,9 @@ class Knight : public ChessPiece {
 		Knight(Colour);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
 		~Knight() override;
-		virtual ChessPiece* copy();
 
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
-	
 
 };
 
@@ -122,17 +109,12 @@ class Knight : public ChessPiece {
 class Pawn : public ChessPiece {
 
 	public:
-		Pawn(Colour, bool);
+		Pawn(Colour);
 		bool isLegalMove(std::string, std::string, ChessBoard&);
 		~Pawn() override;
-		virtual ChessPiece* copy();
 
 		void print(std::ostream&) override;
 		void print_letter(std::ostream&) override;
-		
-	private:
-		bool has_moved;
-		
 
 };
 

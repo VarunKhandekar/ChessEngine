@@ -110,12 +110,7 @@ void ChessBoard::loadState(const std::string state){
 						  break;
 				case 'N': board[row][col] = new Knight(WHITE);
 						  break;
-				case 'P': if (row==6){
-							board[row][col] = new Pawn(WHITE, false);
-						  }
-						  else {
-							board[row][col] = new Pawn(WHITE, true);
-						  }
+				case 'P': board[row][col] = new Pawn(WHITE);
 						  break;
 
 				// Black pieces
@@ -136,12 +131,7 @@ void ChessBoard::loadState(const std::string state){
 						  break;
 				case 'n': board[row][col] = new Knight(BLACK);
 						  break;
-				case 'p': if (row == 1){
-							  board[row][col] = new Pawn(BLACK, false);
-						  }
-						  else {
-							  board[row][col] = new Pawn(BLACK, true);
-						  }
+				case 'p': board[row][col] = new Pawn(BLACK);
 						  break;
 				
 				default: std::cerr << "Invalid letter provided in the FEN string. Please check!" << std::endl;
@@ -170,20 +160,17 @@ void ChessBoard::loadState(const std::string state){
 	white_castle_q = false;
 	black_castle_k = false;
 	black_castle_q = false;
+	for (int i=0; i<static_cast<int>(output[2].size()); i++){
+		switch(output[2][i]){
+			case 'K': white_castle_k = true;
+					  break;
+			case 'Q': white_castle_q = true;
+					  break;
+			case 'k': black_castle_k = true;
+					  break;
+			case 'q': black_castle_q = true;
+					  break;
 
-	//TODO convert to a switch
-	for (int i=0; i<static_cast<int>(output[2].size()); i++){ 
-		if (output[2][i] == 'K'){
-			white_castle_k = true;
-		}
-		if (output[2][i] == 'Q'){
-			white_castle_q = true;
-		}
-		if (output[2][i] == 'k'){
-			black_castle_k = true;
-		}
-		if (output[2][i] == 'q'){
-			black_castle_q = true;
 		}
 	}
 
@@ -222,7 +209,7 @@ void ChessBoard::submitMove(std::string start_pos, std::string end_pos){
 		std::cerr << board[start_row][start_col] << " cannot move to " << end_pos << "!" << std::endl;
 		return;
 	}
-	// if it was, make changes to the board king positions if appropriate
+	// if it was, make changes to the board and the king positions if appropriate
 	else {
 		std::cout << board[start_row][start_col] << " moves from " << start_pos << " to " << end_pos;
 		if (board[end_row][end_col] != nullptr){
@@ -275,12 +262,10 @@ bool ChessBoard::makeMove(std::string start_pos, std::string end_pos){
 
 	// First check if the piece can legally move to the target location
 	if (!board[start_row][start_col]->isLegalMove(start_pos, end_pos, *this)){
-		//std::cerr << board[start_row][start_col] << " cannot move to " << end_pos << "!" << std::endl;
 		return false;
 	}
 
-	// Now check if making the move puts 'our' own king in check. We do this by trying to make the move first
-	
+	// Now check if making the move puts 'our' own king in check. We do this by trying to make the move first	
 	ChessPiece* start_piece = board[start_row][start_col];
 	ChessPiece* end_piece = nullptr;
 
@@ -289,9 +274,9 @@ bool ChessBoard::makeMove(std::string start_pos, std::string end_pos){
 	board[start_row][start_col] = nullptr;
 	
 	
-	// Special case for if we move the king. This needs to be done to check subsequent checks
-	std::string white_king_start;
-	std::string black_king_start;
+	// Special logic for if we move the king. This needs to be done to check subsequent checks
+	std::string white_king_start = "";
+	std::string black_king_start = "";
 	if (start_pos == white_king_pos){
 		white_king_pos = end_pos;
 		white_king_start = start_pos;
@@ -301,53 +286,26 @@ bool ChessBoard::makeMove(std::string start_pos, std::string end_pos){
 		black_king_start = start_pos;
 	}
 
+	if (isCheck(start_piece->getColour())){
+		//revert board as the move was not possible
+		board[start_row][start_col] = board[end_row][end_col];
+		board[end_row][end_col] = end_piece;
+		// set end_piece to a nullptr so when we exit the stack frame, we have no memory deallocation issues
+		end_piece=nullptr;
+		//now also revert the board's king position
+		if (start_piece->getColour()==WHITE){
+			if (start_pos == white_king_start){
+				white_king_pos = white_king_start;
+			}
+		}
+		else {
+			if (start_pos == black_king_start){
+				black_king_pos = black_king_start;
+			}
+		}
+		return false;
+	}
 
-	//WHAT HAPPENS TO PAWNS...	
-	//std::cout << start_piece->getColour() << std::endl;
-	if (start_piece->getColour()==WHITE){
-		for (int row=0; row<8; row++){
-			for (int col=0; col<8; col++){
-				if (board[row][col] != nullptr){
-					if (board[row][col]->getColour()!=WHITE){
-						// if the opposing piece can take our king, we must revert the board
-						if (makeMove(rowColToPos(row, col), white_king_pos)){
-							board[start_row][start_col] = board[end_row][end_col];
-							board[end_row][end_col] = end_piece;
-							// set end_piece to a nullptr so when we exit the stack frame, we have no memory deallocation issues
-							end_piece=nullptr;
-							//now also revert the board's king position
-							if (end_pos == white_king_pos){
-								white_king_pos = white_king_start;
-							}
-							return false;
-						}
-					}
-				}
-			}
-		}
-	}
-	else{
-		for (int row=0; row<8; row++){
-			for (int col=0; col<8; col++){
-				if (board[row][col] != nullptr){
-					if (board[row][col]->getColour()!=BLACK){
-						// if the opposing piece can take our king, we must revert the board
-						if (makeMove(rowColToPos(row, col), black_king_pos)){
-							board[start_row][start_col] = board[end_row][end_col];
-							board[end_row][end_col] = end_piece;
-							// set end_piece to a nullptr so when we exit the stack frame, we have no memory deallocation issues
-							end_piece=nullptr;
-							//now also revert the board's king position
-							if (end_pos == black_king_pos){
-								black_king_pos = black_king_start;
-							}
-							return false;
-						}
-					}
-				}
-			}
-		}
-	}
 	// If we reach here, we are not in check, so the move is ok
 	// Revert the board. At this stage, we have confirmed the move is legally correct in chess rules
 	board[start_row][start_col] = board[end_row][end_col];
@@ -355,20 +313,12 @@ bool ChessBoard::makeMove(std::string start_pos, std::string end_pos){
 	// set end_piece to a nullptr so when we exit the stack frame, we have no memory deallocation issues
 	end_piece=nullptr;
 	//now also revert the king position if needed
-	if (end_pos == white_king_pos){
+	if (start_pos == white_king_start){
 		white_king_pos = white_king_start;
 	}	
-	else if (end_pos == black_king_pos){
+	else if (start_pos == black_king_start){
 		black_king_pos = black_king_start;
 	}	
-	displayBoard();
-		
-
-	//std::cout << start_piece << " moves from " << start_pos << " to " << end_pos;
-	//if (end_piece != nullptr){
-	//	std::cout << " taking " << end_piece;		
-	//}
-	//std::cout << std::endl;
 
 	return true;
 }
@@ -403,7 +353,7 @@ bool ChessBoard::blockCheck(std::string target_pos, Colour colour){
 			if (board[row][col]!=nullptr){
 				if (board[row][col]->getColour()==colour){
 					// if we can't block or take
-					if (board[row][col]->isLegalMove(rowColToPos(row, col), target_pos, *this)){
+					if (makeMove(rowColToPos(row, col), target_pos)){
 						return true;
 					}
 				}
@@ -415,9 +365,8 @@ bool ChessBoard::blockCheck(std::string target_pos, Colour colour){
 
 
 bool ChessBoard::isCheckmate(Colour colour){
-	// we start by assuming we are in check
-	// get starting king position to revert at the end if needed
-	std::string king_start_pos;
+	// get starting king position to help with offsets for checking if we can protect' the king
+	std::string king_start_pos = "";
 	if (colour == WHITE){
 		king_start_pos = white_king_pos;
 	}
@@ -431,12 +380,6 @@ bool ChessBoard::isCheckmate(Colour colour){
 			std::string new_pos = rowColToPos(posToRow(king_start_pos) + row_delta, posToCol(king_start_pos) + col_delta);
 			// recall make move will alter the king's position and the board if a move was legal. So we must revert it
 			if (makeMove(king_start_pos, new_pos)){
-				//if (colour==WHITE){
-				//	white_king_pos = king_start_pos;
-				//}
-				//else {
-				//	black_king_pos = king_start_pos;
-				//}
 				return false;
 			}
 		}
@@ -450,103 +393,59 @@ bool ChessBoard::isCheckmate(Colour colour){
 		for (int col=0; col<8; col++){
 			if (board[row][col]!=nullptr){
 				if (board[row][col]->getColour()!=colour){
-					if (board[row][col]->isLegalMove(rowColToPos(row, col), king_start_pos, *this)){
+					if (makeMove(rowColToPos(row, col), king_start_pos)){
+						check_count++;
+						if (check_count > 1){
+							return true;
+						}
+
 						//if true, we have found our checking piece. Now see if we can take or block it
 						int row_delta = row - posToRow(king_start_pos);
 						int col_delta = col - posToCol(king_start_pos);	
 						
-						//diagonal check logic
-						if (std::abs(row_delta) == std::abs(col_delta)){
-							for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
-								for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){	
-									// skip the case where no move is made
-									if (row_change == 0 && col_change == 0){
-										continue;
-									}
-									// check if we need to move in the 'negative' direction for either rows or cols
-									int row_change_signed = row_change;
-									int col_change_signed = col_change;
-									if (std::signbit(row_delta)){
-										row_change_signed = row_change*-1;
-									}
-									if (std::signbit(col_delta)){
-										col_change_signed = col_change*-1;
-									}
-									
+						for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
+							for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){	
+								// skip the case where no move is made
+								if (row_change == 0 && col_change == 0){
+									continue;
+								}
+								// check if we need to move in the 'negative' direction for either rows or cols
+								int row_change_signed = row_change;
+								int col_change_signed = col_change;
+								if (std::signbit(row_delta)){
+									row_change_signed = row_change*-1;
+								}
+								if (std::signbit(col_delta)){
+									col_change_signed = col_change*-1;
+								}
+								//diagonal check logic
+								if (std::abs(row_delta) == std::abs(col_delta)){
 									if (std::abs(row_change_signed) == std::abs(col_change_signed)){ 
 										//check if we can't block the check
-										if (!blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
+										if (blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
 													posToCol(king_start_pos)+col_change_signed), colour)){
-											return true;
-										} 
-										else {
-											check_count++;
-											if (check_count > 1){
-												return true;
-											}
+											return false;
 										} 
 									}
-								}
-							}
-						}
 
-						//horizontal check logic
-						else if (row_delta == 0){
-							for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
-								for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){	
-									// skip the case where no move is made
-									if (row_change == 0 && col_change == 0){
-										continue;
-									}
-									// check if we need to move in the 'negative' direction for either rows or cols
-									int row_change_signed = row_change;
-									int col_change_signed = col_change;
-									if (std::signbit(row_delta)){
-										row_change_signed = row_change*-1;
-									}
-									if (std::signbit(col_delta)){
-										col_change_signed = col_change*-1;
-									}
-									
+
+								}
+								//horizontal check logic
+								else if (row_delta == 0){
 									if (std::abs(row_change_signed) == 0){
-										if (!blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
+										if (blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
 													posToCol(king_start_pos)+col_change_signed), colour)){
-											return true;
+											return false;
 										}
-										else {
-											check_count++;
-											if (check_count > 1){
-												return true;
-											}
-										} 
 									}
+
 								}
-							}
-
-						}
-
-						//vertical check logic
-						else if (col_delta == 0){
-							for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
-								for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){	
-									// skip the case where no move is made
-									if (row_change == 0 && col_change == 0){
-										continue;
-									}
-									// check if we need to move in the 'negative' direction for either rows or cols
-									int row_change_signed = row_change;
-									int col_change_signed = col_change;
-									if (std::signbit(row_delta)){
-										row_change_signed = row_change*-1;
-									}
-									if (std::signbit(col_delta)){
-										col_change_signed = col_change*-1;
-									}
-									
+								//vertical check logic
+								else if (col_delta == 0){
 									if (std::abs(col_change_signed) == 0){
-										if (!blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
+										if (blockCheck(rowColToPos(posToRow(king_start_pos)+row_change_signed, 
 													posToCol(king_start_pos)+col_change_signed), colour)){
-											return true;
+											return false;
 										}
 										else {
 											check_count++;
@@ -556,20 +455,14 @@ bool ChessBoard::isCheckmate(Colour colour){
 										} 
 									}
 								}
-							}
-						}
-						// knight check logic
-						if ((std::abs(row_delta) == 2 && std::abs(col_delta) == 1) ||
-								(std::abs(row_delta) == 1 && std::abs(col_delta) == 2) ){
-							if (!blockCheck(rowColToPos(row, col), colour)){
-								return true;
-							}
-							else {
-								check_count++;
-								if (check_count > 1){
-									return true;
+								// knight check logic
+								else if ((std::abs(row_delta) == 2 && std::abs(col_delta) == 1) ||
+										(std::abs(row_delta) == 1 && std::abs(col_delta) == 2) ){
+									if (blockCheck(rowColToPos(row, col), colour)){
+										return false;
+									}
 								}
-							} 
+							}
 						}
 					}
 				}
@@ -577,9 +470,9 @@ bool ChessBoard::isCheckmate(Colour colour){
 		}
 	}
 
-
 	return true;
 }
+
 
 
 bool ChessBoard::isStalemate(Colour colour){
