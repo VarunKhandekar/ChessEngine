@@ -393,13 +393,13 @@ bool ChessBoard::isCheckmate(Colour colour){
 		for (int col=0; col<8; col++){
 			if (board[row][col]!=nullptr){
 				if (board[row][col]->getColour()!=colour){
+					//if the following is true, we have found our checking piece. Now see if we can take or block it
 					if (makeMove(rowColToPos(row, col), king_start_pos)){
 						check_count++;
 						if (check_count > 1){
 							return true;
 						}
 
-						//if true, we have found our checking piece. Now see if we can take or block it
 						int row_delta = row - posToRow(king_start_pos);
 						int col_delta = col - posToCol(king_start_pos);	
 						
@@ -427,8 +427,6 @@ bool ChessBoard::isCheckmate(Colour colour){
 											return false;
 										} 
 									}
-
-
 								}
 								//horizontal check logic
 								else if (row_delta == 0){
@@ -438,7 +436,6 @@ bool ChessBoard::isCheckmate(Colour colour){
 											return false;
 										}
 									}
-
 								}
 								//vertical check logic
 								else if (col_delta == 0){
