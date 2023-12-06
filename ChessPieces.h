@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
 #include <cmath>
 #include "helpers.h"
 
@@ -13,29 +12,43 @@ class ChessBoard;
 
 
 class ChessPiece {
-	protected:
-		Colour colour;
-
+	
 	public:
-		// constructor
+		/* constructor */
 		ChessPiece(Colour);
 
-		//destructor
+		/* destructor */
 		virtual ~ChessPiece();
-
+		
+		/* Function overloading for the << operator. Makes use of the 'print' function below
+		 * @param std::ostream&: a reference to an ostream object
+		 * @param ChessPiece*: a pointer to a ChessPiece on our ChessBoard
+		 * @return prints custom output to screen e.g. "Black's Queen"
+		 * */
 		friend std::ostream& operator << (std::ostream&, ChessPiece*);
 
+		/* Function overloading for the << operator. Makes use of the 'print_letter' function below
+		 * @param std::ostream&: a reference to an ostream object
+		 * @param ChessPiece&: a reference to a ChessPiece on our ChessBoard
+		 * @return prints a single letter to screen representing the FEN notation for a piece e.g. "K"
+		 * */
 		friend std::ostream& operator << (std::ostream&, ChessPiece&);
 
-	
-		/* A pure virtual function to provide the skeleton for printing the piece colour and piece type */
-		virtual void print(std::ostream&) = 0;
-		virtual bool isLegalMove(std::string, std::string, ChessBoard&) = 0;
-
-		/* A pure virtual function to provide the skeleton for printing the appropriate piece letter (FEN notation) */
-		virtual void print_letter(std::ostream&) = 0;
 		
+		/* A pure virtual function to provide the skeleton for checking if a move is 'geometrically' legal for a given piece */
+		virtual bool isLegalMove(const std::string, const std::string, const ChessBoard&) const = 0;
+		
+		/* A function to get the colour of a chess piece 
+		 * @return a colour from the Colour enum defined in "headers.h"*/
 		Colour getColour();
+	
+	protected:
+		Colour colour;
+		/* A pure virtual function to provide the skeleton for printing the piece colour and piece type */
+		virtual void print(std::ostream&) const = 0;
+
+		/* A pure virtual function to provide the skeleton for printing the appropriate piece letter (as per FEN notation) */
+		virtual void print_letter(std::ostream&) const = 0;
 
 };
 
@@ -43,11 +56,14 @@ class ChessPiece {
 class King : public ChessPiece {
 
 	public:
+		/* constructor */
 		King(Colour);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
+		
+		/* destructor */
 		~King() override;
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
 }; 
 
@@ -55,11 +71,14 @@ class King : public ChessPiece {
 class Queen : public ChessPiece {
 
 	public:
+		/* constructor */
 		Queen(Colour);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
+		
+		/* destructor */
 		~Queen() override;
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
 }; 
 
@@ -67,28 +86,30 @@ class Queen : public ChessPiece {
 class Rook : public ChessPiece {
 
 	public:
-		Rook(Colour, bool);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
+		/* constructor */
+		Rook(Colour);
+		
+		/* destructor */
 		~Rook() override;
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
-		bool isKingSide();
-
-	private:
-		bool king_side;
 }; 
 
 
 class Bishop : public ChessPiece {
 
 	public:
+		/* constructor */
 		Bishop(Colour);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
-		~Bishop() override;
 		
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		/* destructor */
+		~Bishop() override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
+		
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
 };
 
@@ -96,12 +117,15 @@ class Bishop : public ChessPiece {
 class Knight : public ChessPiece {
 
 	public:
+		/* constructor */
 		Knight(Colour);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
+		
+		/* destructor */
 		~Knight() override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
 
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
 };
 
@@ -109,12 +133,15 @@ class Knight : public ChessPiece {
 class Pawn : public ChessPiece {
 
 	public:
+		/* constructor */
 		Pawn(Colour);
-		bool isLegalMove(std::string, std::string, ChessBoard&);
+		
+		/* destructor */
 		~Pawn() override;
+		bool isLegalMove(const std::string, const std::string, const ChessBoard&) const;
 
-		void print(std::ostream&) override;
-		void print_letter(std::ostream&) override;
+		void print(std::ostream&) const override;
+		void print_letter(std::ostream&) const override;
 
 };
 

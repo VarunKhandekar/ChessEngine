@@ -4,11 +4,12 @@
 /* ==============================
  * PARENT CLASS: ChessPiece 
  * ============================== */
-//constructor
+/* constructor */
 ChessPiece::ChessPiece(Colour _colour) : colour(_colour){
 }
 
 
+/* destructor */
 ChessPiece::~ChessPiece(){
 }
 
@@ -33,16 +34,17 @@ std::ostream& operator << (std::ostream& os, ChessPiece& piece){
 /* ==============================
  * CHILD CLASS: King 
  * ============================== */
-//constructor
+/* constructor */
 King::King(Colour _colour) : ChessPiece(_colour) {
 }
 
 
+/* destructor */
 King::~King(){
 }
 
 
-bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+bool King::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
@@ -53,7 +55,7 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 		return false;
 	}
 	
-	// check magnitudes of the move
+	// get magnitudes of the move
 	int row_delta = end_row - start_row;
 	int col_delta = end_col - start_col;
 
@@ -61,10 +63,17 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 	if (row_delta == 0 && col_delta == 0){
 		return false;
 	}
-	if (std::abs(row_delta) > 1 || std::abs(col_delta) > 1){
-			return false;
+	// if we are moving too many rows or too many columns
+	if (std::abs(row_delta) > 1){
+		return false;
 	}
-	
+	if (std::abs(row_delta) == 1 && std::abs(col_delta) > 1){
+		return false;
+	}
+	// checking for the castle move
+	if (std::abs(row_delta) == 0 && std::abs(col_delta) > 2){
+		return false;
+	}
 
 	// check for blockages. By this stage, we know the submitted move has the potential to be valid
 	for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
@@ -83,14 +92,12 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 				col_change_signed = col_change*-1;
 			}
 			//check if the piece is blocked
-			if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+			if (cb.isOwnPiece(start_row+row_change_signed, start_col+col_change_signed, colour)){
 					return false;
-				}			
 			}
 			//check for the castle move. By this stage, row_delta would be 0 anyway so no need to check for that
 			if (std::abs(col_delta)==2){
-				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!=nullptr){
+				if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed) !=nullptr){
 					return false;
 				}
 			}
@@ -100,7 +107,8 @@ bool King::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 }
 
 
-void King::print(std::ostream& os){
+/* */
+void King::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's King";
 	}
@@ -110,7 +118,8 @@ void King::print(std::ostream& os){
 }
 
 
-void King::print_letter(std::ostream& os){
+/* */
+void King::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "K";
 	}
@@ -123,109 +132,37 @@ void King::print_letter(std::ostream& os){
 /* ==============================
  * CHILD CLASS: Queen 
  * ============================== */
-//constructor
+/* constructor */
 Queen::Queen(Colour _colour) :
 	ChessPiece(_colour) {
 }
 
 
+/* destructor */
 Queen::~Queen(){
 }
 
 
-bool Queen::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
-	int start_row = posToRow(start_pos);
-	int start_col = posToCol(start_pos);
-	int end_row = posToRow(end_pos);
-	int end_col = posToCol(end_pos);
-
-	// check target is on our board
-	if (end_row > 7 || end_row < 0 || end_col > 7 || end_col < 0){
-		return false;
-	}
+/* */
+bool Queen::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const {
 	
-	// check magnitudes of the move
-	int row_delta = end_row - start_row;
-	int col_delta = end_col - start_col;
-
-	// check for validity of the move in terms of file and rank
-	// no move case
-	if (row_delta == 0 && col_delta == 0){
-		return false;
-	}
-	// horizontals, verticals, diagonals
-	if (!((row_delta == 0 && std::abs(col_delta) > 0) || 
-			(col_delta == 0 && std::abs(row_delta) > 0)|| 
-			 std::abs(row_delta) == std::abs(col_delta))){
-		return false;
+	// A queen is just a combo of a rook and a bishop
+	Rook* test_rook = new Rook(colour);
+	Bishop* test_bishop = new Bishop(colour);
+	
+	bool legal_move = false;
+	if (test_rook->isLegalMove(start_pos, end_pos, cb) || test_bishop->isLegalMove(start_pos, end_pos, cb)){
+		legal_move = true;
 	}
 
-	// check for blockages. 
-	// By this stage, we know the submitted move has the potential to be valid
-	for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
-		for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){
-			// skip the case where no move is made
-			if (row_change == 0 && col_change == 0){
-				continue;
-			}
-			// check if we need to move in the 'negative' direction for either rows or cols
-			int row_change_signed = row_change;
-			int col_change_signed = col_change;
-			if (std::signbit(row_delta)){
-				row_change_signed = row_change*-1;
-			}
-			if (std::signbit(col_delta)){
-				col_change_signed = col_change*-1;
-			}
-			// check if the piece is blocked 
-			// If legitimate, then check for a blockage 
-			// Extra queen logic -> see if the desired move is diagonal or not
-			if (std::abs(row_delta)==std::abs(col_delta)){
-				if (row_change == col_change){
-					// case for if we are at our target square
-					if (row_change_signed == row_delta && col_change_signed == col_delta){
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-							if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
-								return false;
-							}			
-						}
-					}
-					// case for if we are en route to target square. Check if not blocked by something
-					else { 
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-							return false;
-						}
-					}
-				}
-			}
-			// we get to here if the hypothesised move is not illegal and is not a diagonal move
-			// in such a case, either rows, or cols, will be 0. So a simple else should suffice
-			else {
-				if ((row_change+start_row) == start_row || 
-						(col_change+start_col) == start_col){
-					// case for if we are at our target square
-					if (row_change_signed == row_delta && col_change_signed == col_delta){
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-							if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
-								return false;
-							}
-						}
-					}
-					// case for if we are en route to target square. Check if not blocked by something
-					else { 
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-							return false;
-						}
-					}	
-				}
-			}
-		}
-	}
-	return true;
+	delete test_rook;
+	delete test_bishop;
+
+	return legal_move;
 }
 
 
-void Queen::print(std::ostream& os){
+void Queen::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Queen";
 	}
@@ -235,7 +172,7 @@ void Queen::print(std::ostream& os){
 }
 
 
-void Queen::print_letter(std::ostream& os){
+void Queen::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "Q";
 	}
@@ -248,22 +185,17 @@ void Queen::print_letter(std::ostream& os){
 /* ==============================
  * CHILD CLASS: Rook 
  * ============================== */
-//constructor
-Rook::Rook(Colour _colour, bool _king_side) : 
-	ChessPiece(_colour), king_side(_king_side) {
+/* constructor */
+Rook::Rook(Colour _colour) : ChessPiece(_colour) {
 }
 
 
+/* destructor */
 Rook::~Rook(){
 }
 
 
-bool Rook::isKingSide(){
-	return king_side;
-}
-
-
-bool Rook::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+bool Rook::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
@@ -306,21 +238,18 @@ bool Rook::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 			if (std::signbit(col_delta)){
 				col_change_signed = col_change*-1;
 			}
-			// check if the piece is blocked 
-			// If legitimate, then check for a blockage (horizontals, verticals)
+			// check if the piece is blocked (horizontals, verticals)
 			if ((row_change+start_row) == start_row || 
 					(col_change+start_col) == start_col){
 				// case for if we are at our target square
 				if (row_change_signed == row_delta && col_change_signed == col_delta){
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+					if (cb.isOwnPiece(start_row+row_change_signed, start_col+col_change_signed, colour)){
 							return false;
-						}
 					}
 				}
 				// case for if we are en route to target square. Check if not blocked by something
 				else { 
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+					if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)!= nullptr){
 						return false;
 					}
 				}	
@@ -332,7 +261,7 @@ bool Rook::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 }
 
 
-void Rook::print(std::ostream& os){
+void Rook::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Rook";
 	}
@@ -342,7 +271,7 @@ void Rook::print(std::ostream& os){
 }
 
 
-void Rook::print_letter(std::ostream& os){
+void Rook::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "R";
 	}
@@ -355,16 +284,17 @@ void Rook::print_letter(std::ostream& os){
 /* ==============================
  * CHILD CLASS: Bishop
  * ============================== */
-//constructor
+/* constructor */
 Bishop::Bishop(Colour _colour) : ChessPiece(_colour) {
 }
 
 
+/* destructor */
 Bishop::~Bishop(){
 }
 
 
-bool Bishop::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+bool Bishop::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
@@ -406,20 +336,17 @@ bool Bishop::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard&
 			if (std::signbit(col_delta)){
 				col_change_signed = col_change*-1;
 			}
-			// check if the piece is blocked
-			// If legitimate, then check for a blockage (only diagonals)
+			// check if the piece is blocked (only diagonals)
 			if (row_change == col_change){
 				// case for if we are at our target square
 				if (row_change_signed == row_delta && col_change_signed == col_delta){
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-						if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+					if (cb.isOwnPiece(start_row+row_change_signed, start_col+col_change_signed, colour)){
 							return false;
-						}			
 					}
 				}
 				// case for if we are en route to target square. Check if not blocked by something
 				else { 
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
+					if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed) != nullptr){
 						return false;
 					}
 				}
@@ -431,7 +358,7 @@ bool Bishop::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard&
 }
 
 
-void Bishop::print(std::ostream& os){
+void Bishop::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Bishop";
 	}
@@ -441,7 +368,7 @@ void Bishop::print(std::ostream& os){
 }
 
 
-void Bishop::print_letter(std::ostream& os){
+void Bishop::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "B";
 	}
@@ -454,16 +381,17 @@ void Bishop::print_letter(std::ostream& os){
 /* ==============================
  * CHILD CLASS: Knight 
  * ============================== */
-//constructor
+/* constructor */
 Knight::Knight(Colour _colour) : ChessPiece(_colour) {
 }
 
 
+/* destructor */
 Knight::~Knight(){
 }
 
 
-bool Knight::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+bool Knight::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
@@ -506,14 +434,11 @@ bool Knight::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard&
 			if (std::signbit(col_delta)){
 				col_change_signed = col_change*-1;
 			}
-			// check if the piece is blocked
-			// If legitimate, then check for a blockage (special knight move)
+			// check if the piece is blocked (special knight logic)
 			if ((row_change == 2 && col_change == 1) || 
 				(col_change == 2 && row_change == 1)){
-				if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!= nullptr){
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
-						return false;
-					}			
+				if (cb.isOwnPiece(start_row+row_change_signed, start_col+col_change_signed, colour)){
+					return false;
 				}
 			}
 		}
@@ -523,7 +448,7 @@ bool Knight::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard&
 }
 
 
-void Knight::print(std::ostream& os){
+void Knight::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Knight";
 	}
@@ -533,7 +458,7 @@ void Knight::print(std::ostream& os){
 }
 
 
-void Knight::print_letter(std::ostream& os){
+void Knight::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "N";
 	}
@@ -546,16 +471,17 @@ void Knight::print_letter(std::ostream& os){
 /* ==============================
  * CHILD CLASS: Pawn
  * ============================== */
-//constructor
+/* constructor */
 Pawn::Pawn(Colour _colour) : ChessPiece(_colour) {
 }
 
 
+/* destructor */
 Pawn::~Pawn(){
 }
 
 
-bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& cb){
+bool Pawn::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
 	int end_row = posToRow(end_pos);
@@ -628,20 +554,20 @@ bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 			// Consider a move straight up/down the board
 			if (std::abs(col_delta)==0){
 				if ((start_col+col_change_signed) == start_col){
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]!=nullptr){
+					if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)!=nullptr){
 						return false;
 					}
 				}
 			}
-			// By this time, the move should be ok. This condition would then be for taking
+			// By this time, the move should be ok. This condition would then be for taking an enemy piece
 			else {
 				if (col_change==row_change){
 					//We first see if it is a nullptr
-					if (cb.board[start_row+row_change_signed][start_col+col_change_signed]==nullptr){
+					if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)==nullptr){
 						return false;
 					}
 					// now we check if it's a piece of the same colour		
-					else if (cb.board[start_row+row_change_signed][start_col+col_change_signed]->getColour()==colour){
+					else if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)->getColour()==colour){
 						return false;
 					}	
 				}		
@@ -652,7 +578,8 @@ bool Pawn::isLegalMove(std::string start_pos, std::string end_pos, ChessBoard& c
 	return true;
 }
 
-void Pawn::print(std::ostream& os){
+
+void Pawn::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Pawn";
 	}
@@ -662,7 +589,7 @@ void Pawn::print(std::ostream& os){
 }
 
 
-void Pawn::print_letter(std::ostream& os){
+void Pawn::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "P";
 	}
