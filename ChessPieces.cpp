@@ -13,18 +13,18 @@ ChessPiece::ChessPiece(Colour _colour) : colour(_colour){
 ChessPiece::~ChessPiece(){
 }
 
-
+/* A function to get the colour of a chess piece */
 Colour ChessPiece::getColour(){
 	return colour;
 }
 
-
+/* Function overloading for the << operator. Makes use of the 'print' function below */
 std::ostream& operator << (std::ostream& os, ChessPiece* piece){
 	piece->print(os);
 	return os;
 }
 
-
+/* Function overloading for the << operator. Makes use of the 'print_letter' function below */
 std::ostream& operator << (std::ostream& os, ChessPiece& piece){
 	piece.print_letter(os);
 	return os;
@@ -44,6 +44,7 @@ King::~King(){
 }
 
 
+/* An override for checking if a move is 'geometrically' legal for a king. */ 
 bool King::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -107,7 +108,7 @@ bool King::isLegalMove(const std::string start_pos, const std::string end_pos, c
 }
 
 
-/* */
+/* A function to print King and its colour in words e.g. "White's King" */
 void King::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's King";
@@ -118,7 +119,7 @@ void King::print(std::ostream& os) const {
 }
 
 
-/* */
+/* A function to print King in FEN notation e.g. "K" for white's king */
 void King::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "K";
@@ -143,7 +144,7 @@ Queen::~Queen(){
 }
 
 
-/* */
+/* An override for checking if a move is 'geometrically' legal for a queen. */
 bool Queen::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const {
 	
 	// A queen is just a combo of a rook and a bishop
@@ -162,6 +163,7 @@ bool Queen::isLegalMove(const std::string start_pos, const std::string end_pos, 
 }
 
 
+/* A function to print Queen and its colour in words e.g. "White's Queen" */
 void Queen::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Queen";
@@ -172,6 +174,7 @@ void Queen::print(std::ostream& os) const {
 }
 
 
+/* A function to print Queen in FEN notation e.g. "Q" for white's queen */
 void Queen::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "Q";
@@ -195,6 +198,7 @@ Rook::~Rook(){
 }
 
 
+/* An override for checking if a move is 'geometrically' legal for a king. */
 bool Rook::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -261,6 +265,7 @@ bool Rook::isLegalMove(const std::string start_pos, const std::string end_pos, c
 }
 
 
+/* A function to print Rook and its colour in words e.g. "White's Rook" */
 void Rook::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Rook";
@@ -271,6 +276,7 @@ void Rook::print(std::ostream& os) const {
 }
 
 
+/* A function to print Rook in FEN notation e.g. "R" for white's rook */
 void Rook::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "R";
@@ -294,6 +300,7 @@ Bishop::~Bishop(){
 }
 
 
+/* An override for checking if a move is 'geometrically' legal for a king. */
 bool Bishop::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -358,6 +365,7 @@ bool Bishop::isLegalMove(const std::string start_pos, const std::string end_pos,
 }
 
 
+/* A function to print Bishop and its colour in words e.g. "White's Bishop" */
 void Bishop::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Bishop";
@@ -368,6 +376,7 @@ void Bishop::print(std::ostream& os) const {
 }
 
 
+/* a function to print bishop in fen notation e.g. "b" for white's bishop */
 void Bishop::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "B";
@@ -390,7 +399,7 @@ Knight::Knight(Colour _colour) : ChessPiece(_colour) {
 Knight::~Knight(){
 }
 
-
+/* An override for checking if a move is 'geometrically' legal for a king. */
 bool Knight::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -448,6 +457,7 @@ bool Knight::isLegalMove(const std::string start_pos, const std::string end_pos,
 }
 
 
+/* A function to print Knight and its colour in words e.g. "White's Knight" */
 void Knight::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Knight";
@@ -457,7 +467,7 @@ void Knight::print(std::ostream& os) const {
 	}
 }
 
-
+/* A function to print Knight in FEN notation e.g. "N" for white's knight */
 void Knight::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "N";
@@ -481,6 +491,7 @@ Pawn::~Pawn(){
 }
 
 
+/* An override for checking if a move is 'geometrically' legal for a king. */
 bool Pawn::isLegalMove(const std::string start_pos, const std::string end_pos, const ChessBoard& cb) const{
 	int start_row = posToRow(start_pos);
 	int start_col = posToCol(start_pos);
@@ -579,6 +590,7 @@ bool Pawn::isLegalMove(const std::string start_pos, const std::string end_pos, c
 }
 
 
+/* A function to print Pawn and its colour in words e.g. "White's Pawn" */
 void Pawn::print(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "White's Pawn";
@@ -589,6 +601,7 @@ void Pawn::print(std::ostream& os) const {
 }
 
 
+/* A function to print Pawn in FEN notation e.g. "P" for white's king */
 void Pawn::print_letter(std::ostream& os) const {
 	if (this->colour == WHITE){
 		os << "P";

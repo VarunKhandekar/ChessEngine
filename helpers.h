@@ -16,11 +16,14 @@ int posToCol(std::string);
 std::string rowColToPos(int, int);
 
 
+/* Helper: data type defined to represent the colour of the piece */
 enum Colour{
 	WHITE = 0,
 	BLACK = 1
 };
 
+
+/* Helper: operator overloading to output the Colour enum defined above into text e.g. WHITE becomes "White" */
 std::ostream& operator << (std::ostream& os, Colour colour);
 
 #endif

@@ -164,9 +164,6 @@ void ChessBoard::displayBoard() const{
 }
 
 
-
-
-
 /* A function to get a chess piece from the chess board */
 ChessPiece* ChessBoard::getPiece(const int row, const int col) const{
 	if (row >= 0 && row < 8 && col >=0 && col < 8){
@@ -189,6 +186,7 @@ std::string ChessBoard::getWhiteKingPos() const{
 std::string ChessBoard::getBlackKingPos() const{
 	return black_king_pos;
 }
+
 
 /* A function that returns true if a given row and column on our board represents a piece of the given colour */
 bool ChessBoard::isOwnPiece(int row, int col, Colour colour) const{
@@ -240,13 +238,7 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 	if (isCastleMove(start_pos, end_pos)){
 		if (tryCastleMove(start_pos, end_pos)){
 			// get character output for which side we're castling to
-			std::string side = "";
-			if ((posToCol(end_pos) - posToCol(start_pos)) == 2){
-				side = "king";
-			}
-			else {
-				side = "queen";
-			}
+			std::string side = ((posToCol(end_pos) - posToCol(start_pos)) == 2) ? "king" : "queen";
 			std::cout << getPiece(start_row, start_col) << " castles to the " << side << "'s side" << std::endl;
 			
 			// Move Rook
@@ -386,6 +378,7 @@ bool ChessBoard::tryMove(const std::string start_pos, const std::string end_pos)
 	
 	// Special logic for if we move the king. This needs to be done to check subsequent checks 
 	// and be able to revert the king position if the move is not feasible
+	// define these strings outside first so they don't disappear after the if code blocks
 	std::string white_king_start = "";
 	std::string black_king_start = "";
 	if (start_pos == white_king_pos){
@@ -513,7 +506,8 @@ bool ChessBoard::tryCastleMove(const std::string start_pos, const std::string en
 		if (std::signbit(col_delta)){
 			col_change_signed = col_change*-1;
 		}
-
+		// don't need to worry about the rook end point being an enemy piece
+		// as the king would not have been able to make the move in the first piece so we would never even reach here
 		if (!tryMove(start_pos, rowColToPos(start_row, start_col + col_change_signed))){
 			return false;
 		}
@@ -685,5 +679,4 @@ bool ChessBoard::isStalemate(Colour colour){
 	}
 	return true;
 }
-
 

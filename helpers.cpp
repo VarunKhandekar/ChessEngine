@@ -25,6 +25,7 @@ std::string rowColToPos(int row, int col){
 }
 
 
+/* Helper: operator overloading to output the Colour enum defined above into text e.g. WHITE becomes "White" */
 std::ostream& operator << (std::ostream& os, Colour colour){
 	switch(colour){
 		case WHITE: os << "White";
@@ -36,3 +37,4 @@ std::ostream& operator << (std::ostream& os, Colour colour){
 	}
 	return os;
 }
+
