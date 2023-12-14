@@ -19,7 +19,6 @@ ChessBoard::~ChessBoard(){
 
 /* A function to load a board state, and set the pieces up from a FEN string */
 void ChessBoard::loadState(const std::string state){
-	//TODO do loop through string version to mean less stl imports
 	//start by destroying the board to ensure no memory leaks if a 
 	//board had previously been created with pointers to heap
 	destroyBoard();
