@@ -575,7 +575,10 @@ bool Pawn::isLegalMove(const std::string start_pos, const std::string end_pos, c
 				if (col_change==row_change){
 					//We first see if it is a nullptr
 					if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)==nullptr){
-						return false;
+						// TODO add check here for en passant square
+						if (rowColToPos(start_row+row_change_signed, start_col+col_change_signed) != cb.getEnPassantTarget()){
+							return false;
+						}						
 					}
 					// now we check if it's a piece of the same colour		
 					else if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed)->getColour()==colour){

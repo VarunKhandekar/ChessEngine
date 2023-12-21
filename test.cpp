@@ -73,6 +73,21 @@ int main(){
 
 	ChessBoard cb;
 	cb.loadState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq");
+
+	//cout << inArray("E2", cb.pawn_positions, 16) << endl;
+	cb.submitMove("E2", "E4");
+
+	//cout << inArray("E4", cb.pawn_positions, 16) << endl;
+	cb.submitMove("H7", "H6");
+	cb.submitMove("E4", "E5");
+	cb.submitMove("F7", "F5");
+
+
+	//cout << inArray("E5", cb.pawn_positions, 16) << endl;
+
+
+	cb.submitMove("E5", "F6");
+
 	cout << '\n';
 
 	//for (int row = 0; row < 8; row++){

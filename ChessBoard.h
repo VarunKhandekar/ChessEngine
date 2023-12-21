@@ -47,6 +47,8 @@ class ChessBoard {
 		 * */
 		std::string getBlackKingPos() const;
 
+		std::string getEnPassantTarget() const;
+
 		/* A function that returns true if a given row and column on our board represents a piece of the given colour
 		 * @param int: the row number
 		 * @param int: the col number
@@ -75,6 +77,9 @@ class ChessBoard {
 		 * */
 		void submitMove(const std::string, const std::string);
 
+		/* An array to hold pawn positions */
+		std::string pawn_positions[16];
+
 	private:
 		/* A 'Colour' attribute from the "helpers.h" file to keep track of whose turn it is */
 		Colour turn;
@@ -85,12 +90,17 @@ class ChessBoard {
 		/* Strings to keep track of where each colour's king is on the board */
 		std::string white_king_pos;
 		std::string black_king_pos;
+
+		std::string en_passant_target;
+		std::string en_passant_pawn_pos;
 		
 		/* Booleans to keep track of whether a given castle move is feasible */
 		bool white_castle_k;
 		bool white_castle_q;
 		bool black_castle_k;
 		bool black_castle_q;
+
+		
 
 		/* A function to safely delete all heap pointers on our board and assign them to NULL */
 		void destroyBoard();
@@ -135,6 +145,22 @@ class ChessBoard {
 		 * @return True if the move can be made; false otherwise
 		 * */
 		bool tryCastleMove(const std::string, const std::string);
+
+		/* A function to update the array which contains the locations of pawns on the board
+		 * It makes an update if a pawn is moved, otherwised nothing happens
+		 * @param std::string: a string of length 2 to represent the start position
+		 * @param std::string: a string of length 2 to represent the end position
+		 */
+		void updatePawnPositions(const std::string, const std::string);
+
+		/* A function to set the en passant status for the board. 
+		 * This includes the location of the pawn that has just moved and 
+		 * the square representing the position where a capture can occur.
+		 * The status is reset for any move where a pawn is not moving 2 forwards
+		 * @param std::string: a string of length 2 to represent the start position
+		 * @param std::string: a string of length 2 to represent the end position
+		 */
+		void setEnPassantStatus(const std::string, const std::string);
 
 		/* A function to check if a particular colour is in check
 		 * @param Colour: a colour (BLACK or WHITE) based on the enum defined in "helpers.h"

@@ -3,6 +3,11 @@
 
 /* constructor */
 ChessBoard::ChessBoard(){
+	// initalise pawn positions to empty strings
+	for (int i=0; i<16; i++){
+		pawn_positions[i] = "";
+	}
+
 	for (int row=0; row<8; row++){
 		for (int col=0; col<8; col++){
 			board[row][col] = nullptr;
@@ -37,6 +42,7 @@ void ChessBoard::loadState(const std::string state){
 	// loop through element 0 to set up our board
 	int row = 0;
 	int col = 0;
+	int pawn_counter = 0; // also set up a pawn counter to fill up our pawn positions array
 	for (int i=0; i<static_cast<int>(output[0].size()); i++){
 		//check if we hit our rank delimiter
 		if (output[0][i]=='/'){
@@ -73,6 +79,8 @@ void ChessBoard::loadState(const std::string state){
 				case 'N': board[row][col] = new Knight(WHITE);
 						  break;
 				case 'P': board[row][col] = new Pawn(WHITE);
+						  pawn_positions[pawn_counter] = rowColToPos(row, col);
+						  pawn_counter++;
 						  break;
 
 				// Black pieces
@@ -88,12 +96,21 @@ void ChessBoard::loadState(const std::string state){
 				case 'n': board[row][col] = new Knight(BLACK);
 						  break;
 				case 'p': board[row][col] = new Pawn(BLACK);
+						  pawn_positions[pawn_counter] = rowColToPos(row, col);
+						  pawn_counter++;
 						  break;
 				
 				default: std::cerr << "Invalid letter provided in the FEN string. Please check!" << std::endl;
 						 destroyBoard();
 						 return;
 			}
+			if (pawn_counter > 16){
+				std::cerr << "The FEN string is invalid; there are too many pawns!" << std::endl;
+				// now destroy board to clean up memory
+				destroyBoard();
+				return;
+			}
+
 			col++;
 			if (col > 8){
 				std::cerr << "The FEN string is invalid; there are too many rows!" << std::endl;
@@ -186,6 +203,10 @@ std::string ChessBoard::getBlackKingPos() const{
 	return black_king_pos;
 }
 
+std::string ChessBoard::getEnPassantTarget() const{
+	return en_passant_target;
+}
+
 
 /* A function that returns true if a given row and column on our board represents a piece of the given colour */
 bool ChessBoard::isOwnPiece(int row, int col, Colour colour) const{
@@ -260,12 +281,16 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 			return;
 		}
 	}
-	// Regular move
+	// Regular and en passant move
 	else {
 		if (tryMove(start_pos, end_pos)){
 			std::cout << getPiece(start_row, start_col) << " moves from " << start_pos << " to " << end_pos;
 			if (getPiece(end_row, end_col) != nullptr){
 				std::cout << " taking " << getPiece(end_row, end_col);		
+			}
+			else if (end_pos == en_passant_target){
+				std::cout << " taking " << getPiece(posToRow(en_passant_pawn_pos), posToCol(en_passant_pawn_pos));
+				std::cout << " by en passant";
 			}
 			std::cout << std::endl;
 			updateKingPosition(start_pos, end_pos);
@@ -287,6 +312,9 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 			}
 
 			makeBoardMove(start_row, start_col, end_row, end_col);
+
+			// sets or resets the board's en passant status as required
+			setEnPassantStatus(start_pos, end_pos);
 		}
 		// Otherwise return error message
 		else {
@@ -319,6 +347,57 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 	}
 }
 
+void ChessBoard::updatePawnPositions(const std::string start_pos, const std::string end_pos){
+	// check if a pawn was captured
+	if (inArray(end_pos, pawn_positions, 16) != -1){
+		pawn_positions[inArray(end_pos, pawn_positions, 16)] = "";
+		//std::cout << "Updated array:" << std::endl;
+		//for (int i = 0; i < 16; ++i) {
+		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
+		//}
+	}
+	// check if a pawn was captured by en passant
+	else if (inArray(start_pos, pawn_positions, 16) != -1 && end_pos == en_passant_target){
+		pawn_positions[inArray(en_passant_pawn_pos, pawn_positions, 16)] = "";
+		//std::cout << "Updated array:" << std::endl;
+		//for (int i = 0; i < 16; ++i) {
+		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
+		//}
+	}
+	// now make update if we were moving a pawn in the first place
+	if (inArray(start_pos, pawn_positions, 16) != -1){
+		pawn_positions[inArray(start_pos, pawn_positions, 16)] = end_pos;
+		//std::cout << "Updated array:" << std::endl;
+		//for (int i = 0; i < 16; ++i) {
+		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
+		//}
+	}
+}
+
+/* A function to set the en passant status for the board. Sets if a pawn moves 2, resets otherwise */
+void ChessBoard::setEnPassantStatus(const std::string start_pos, const std::string end_pos) {
+	// by the time this function is used, we are assuming the move is valid and doable
+	int	start_row = posToRow(start_pos);
+	int	start_col = posToCol(start_pos);
+	int	end_row = posToRow(end_pos);
+	//int end_col = posToCol(end_pos);
+
+	int row_delta = end_row-start_row;
+
+	// check if the piece is a pawn moving forwards by 2
+	if (inArray(start_pos, pawn_positions, 16) < 16 && std::abs(row_delta) == 2){
+		en_passant_target = rowColToPos(start_row + row_delta/2, start_col);
+		en_passant_pawn_pos = end_pos;
+		// now we can update pawn positions as we have now checked whether the start_pos is a pawn
+		updatePawnPositions(start_pos, end_pos);
+	}
+	// the piece is not a pawn moving 2 spaces, so en passant states revert to 'nothing'
+	else {
+		updatePawnPositions(start_pos, end_pos);
+		en_passant_target = "";
+		en_passant_pawn_pos = "";
+	}
+}
 
 /* A function to delete all heap pointers on our board and assign them to NULL */
 void ChessBoard::destroyBoard(){
@@ -348,7 +427,15 @@ void ChessBoard::updateKingPosition(const std::string start_pos, const std::stri
 
 /* A function to move the pieces around on board. It moves a piece from the start position to the end position */
 void ChessBoard::makeBoardMove(const int start_row, const int start_col, const int end_row, const int end_col){
-	delete board[end_row][end_col];
+	// extra logic for en passant
+	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) < 16 && 
+			rowColToPos(end_row, end_col) == en_passant_target){
+		delete board[posToRow(en_passant_pawn_pos)][posToCol(en_passant_pawn_pos)];
+		board[posToRow(en_passant_pawn_pos)][posToCol(en_passant_pawn_pos)] = nullptr; //no dangling pointer
+	}
+	else {
+		delete board[end_row][end_col];
+	}
 	board[end_row][end_col] = board[start_row][start_col];
 	board[start_row][start_col] = nullptr;
 }
@@ -373,6 +460,16 @@ bool ChessBoard::tryMove(const std::string start_pos, const std::string end_pos)
 
 	board[end_row][end_col] = board[start_row][start_col];
 	board[start_row][start_col] = nullptr;
+
+	// Extra logic needed for if the move is en passant
+	int en_passant_pawn_row;
+	int en_passant_pawn_col;
+	if (end_pos == en_passant_target){
+		en_passant_pawn_row = posToRow(en_passant_pawn_pos);
+		en_passant_pawn_col = posToCol(en_passant_pawn_pos);
+		end_piece = getPiece(en_passant_pawn_row, en_passant_pawn_col);
+		board[en_passant_pawn_row][en_passant_pawn_col] = nullptr;
+	}
 	
 	
 	// Special logic for if we move the king. This needs to be done to check subsequent checks 
@@ -398,7 +495,14 @@ bool ChessBoard::tryMove(const std::string start_pos, const std::string end_pos)
 	
 	// Revert the board. At this stage, we have confirmed whether the move is valid according to chess rules
 	board[start_row][start_col] = board[end_row][end_col];
-	board[end_row][end_col] = end_piece;
+	// special logic for if the move was an en passant move
+	if (end_pos == en_passant_target){
+		board[en_passant_pawn_row][en_passant_pawn_col] = end_piece;
+		board[end_row][end_col] = nullptr;
+	} else{
+		board[end_row][end_col] = end_piece;
+	}
+	
 	// set end_piece to a nullptr so when we exit the stack frame, we have no memory deallocation issues
 	end_piece = nullptr;
 	// now also revert the king position if needed
