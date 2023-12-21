@@ -314,6 +314,7 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 			makeBoardMove(start_row, start_col, end_row, end_col);
 
 			// sets or resets the board's en passant status as required
+			// also updates the board's pawn positions
 			setEnPassantStatus(start_pos, end_pos);
 		}
 		// Otherwise return error message
@@ -347,30 +348,19 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 	}
 }
 
+/* A function to update the array which contains the locations of pawns on the board */
 void ChessBoard::updatePawnPositions(const std::string start_pos, const std::string end_pos){
 	// check if a pawn was captured
 	if (inArray(end_pos, pawn_positions, 16) != -1){
 		pawn_positions[inArray(end_pos, pawn_positions, 16)] = "";
-		//std::cout << "Updated array:" << std::endl;
-		//for (int i = 0; i < 16; ++i) {
-		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
-		//}
 	}
 	// check if a pawn was captured by en passant
 	else if (inArray(start_pos, pawn_positions, 16) != -1 && end_pos == en_passant_target){
 		pawn_positions[inArray(en_passant_pawn_pos, pawn_positions, 16)] = "";
-		//std::cout << "Updated array:" << std::endl;
-		//for (int i = 0; i < 16; ++i) {
-		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
-		//}
 	}
 	// now make update if we were moving a pawn in the first place
 	if (inArray(start_pos, pawn_positions, 16) != -1){
 		pawn_positions[inArray(start_pos, pawn_positions, 16)] = end_pos;
-		//std::cout << "Updated array:" << std::endl;
-		//for (int i = 0; i < 16; ++i) {
-		//	std::cout << "Element " << i << ": " << pawn_positions[i] << std::endl;
-		//}
 	}
 }
 

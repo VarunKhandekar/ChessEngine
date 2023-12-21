@@ -26,4 +26,4 @@ ChessPieces.o: ChessPieces.h ChessPieces.cpp helpers.h
 	g++ -g -Wall -c ChessPieces.cpp
 
 clean:
-	rm -f *.o chess test
+	rm -f *.o chess test play
