@@ -407,7 +407,7 @@ void ChessBoard::makeBoardMove(const int start_row, const int start_col, const i
 	// check if we need to do a pawn promotion or not
 	if (pawnPromotion(start_row, start_col, end_row, end_col)){
 		char piece;
-		std::cout << "Pawn is being promoted.";
+		std::cout << "Pawn is being promoted. ";
 		do
 		{
 			std::cout << "Please enter the piece you would like (Q, R, B or N): " << std::endl;
