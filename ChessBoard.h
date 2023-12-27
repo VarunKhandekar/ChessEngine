@@ -46,7 +46,11 @@ class ChessBoard {
 		 * @return black king's position as a string
 		 * */
 		std::string getBlackKingPos() const;
-
+		
+		/* A function to get the location of the square that a pawn needs to move into to perform en passant
+		 * 
+		 * @return en passant target square as a string
+		 * */
 		std::string getEnPassantTarget() const;
 
 		/* A function that returns true if a given row and column on our board represents a piece of the given colour
@@ -77,9 +81,6 @@ class ChessBoard {
 		 * */
 		void submitMove(const std::string, const std::string);
 
-		/* An array to hold pawn positions */
-		std::string pawn_positions[16];
-
 	private:
 		/* A 'Colour' attribute from the "helpers.h" file to keep track of whose turn it is */
 		Colour turn;
@@ -91,7 +92,10 @@ class ChessBoard {
 		std::string white_king_pos;
 		std::string black_king_pos;
 
+		/* A string to represent the square where a pawn needs to move to in order to perform en passant */
 		std::string en_passant_target;
+
+		/* A string to represent the location of the pawn that can be taken by en passant */
 		std::string en_passant_pawn_pos;
 		
 		/* Booleans to keep track of whether a given castle move is feasible */
@@ -100,7 +104,8 @@ class ChessBoard {
 		bool black_castle_k;
 		bool black_castle_q;
 
-		
+		/* An array to hold pawn positions */
+		std::string pawn_positions[16];
 
 		/* A function to safely delete all heap pointers on our board and assign them to NULL */
 		void destroyBoard();
@@ -114,7 +119,7 @@ class ChessBoard {
 		void updateKingPosition(const std::string, const std::string);
 
 		/* A function to move the pieces around on board. It moves a piece from the start position to the end position
-		 * (denoted by indices)
+		 * (denoted by indices). It requests user input in tha case of pawn promotion.
 		 * @param int: the start row
 		 * @param int: the start col 
 		 * @param int: the end row
@@ -145,6 +150,16 @@ class ChessBoard {
 		 * @return True if the move can be made; false otherwise
 		 * */
 		bool tryCastleMove(const std::string, const std::string);
+
+		/* A function to check if a given move is one that leads to pawn promotion 
+		 * @param int: the start row
+		 * @param int: the start col 
+		 * @param int: the end row
+		 * @param int: the end col
+		 * 
+		 * @return True if the move is a pawn promotion; false otherwise
+		 * */
+		bool pawnPromotion(const int, const int, const int, const int);
 
 		/* A function to update the array which contains the locations of pawns on the board
 		 * It makes an update if a pawn is moved, otherwised nothing happens

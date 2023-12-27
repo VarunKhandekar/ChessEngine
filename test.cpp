@@ -131,21 +131,21 @@ int main(){
 
 	//cout << cb.board[0][1]->isLegalMove("B8", "A6", cb) << endl;
 
-	cout << "==========" << endl;
+	//cout << "==========" << endl;
 
 
 
 	//cb.makeMove("E2", "E4");
 
-	cb.displayBoard();
+	//cb.displayBoard();
 	
 	//cb.makeMove("E7", "E5");
 
-	cb.displayBoard();
+	//cb.displayBoard();
 	
 	//cb.makeMove("F2", "F4");
 
-	cb.displayBoard();
+	//cb.displayBoard();
 
 	
 	//cout << cb.board[0][4]->isLegalMove("E8", "D8", cb) << endl;
@@ -177,10 +177,10 @@ int main(){
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;
-	string f = "r3k3/4Q3/8/8/8/8/8/7K b ---q";
+	string f = "rnbqkbnr/ppp1pppp/4P3/3p4/8/8/PPPP1PPP/RNBQKBNR w KQkq";
 	cb.loadState(f);
 
-	cb.submitMove("E8", "C8");
+	cb.submitMove("E6", "F7");
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;

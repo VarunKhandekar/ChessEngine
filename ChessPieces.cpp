@@ -77,30 +77,32 @@ bool King::isLegalMove(const std::string start_pos, const std::string end_pos, c
 	}
 
 	// check for blockages. By this stage, we know the submitted move has the potential to be valid
-	for (int row_change = 0; row_change <= std::abs(row_delta); row_change++){
-		for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){
-			// skip the case where no move is made
-			if (row_change == 0 && col_change == 0){
+	for (int col_change = 0; col_change <= std::abs(col_delta); col_change++){
+		//ignore the no move case
+		if (row_delta == 0 && col_change == 0){
+			continue;
+		}
+		//check if we need to move in the 'negative' direction for the cols
+		int col_change_signed = col_change;
+		if (std::signbit(col_delta)){
+			col_change_signed = col_change*-1;
+		}
+
+		//check for the castle move. By this stage, row_delta would be 0 anyway so no need to check for that
+		if (std::abs(col_delta)==2){
+			if (cb.getPiece(start_row+row_delta, start_col+col_change_signed) != nullptr){
+				return false;
+			}
+		}
+		//check for all other moves
+		else {
+			//if we aren't looking at the target square, continue 
+			if (col_change_signed != col_delta){
 				continue;
 			}
-			//check if we need to move in the 'negative' direction for either rows or cols
-			int row_change_signed = row_change;
-			int col_change_signed = col_change;
-			if (std::signbit(row_delta)){
-				row_change_signed = row_change*-1;
-			}
-			if (std::signbit(col_delta)){
-				col_change_signed = col_change*-1;
-			}
 			//check if the piece is blocked
-			if (cb.isOwnPiece(start_row+row_change_signed, start_col+col_change_signed, colour)){
-					return false;
-			}
-			//check for the castle move. By this stage, row_delta would be 0 anyway so no need to check for that
-			if (std::abs(col_delta)==2){
-				if (cb.getPiece(start_row+row_change_signed, start_col+col_change_signed) !=nullptr){
-					return false;
-				}
+			else if (cb.isOwnPiece(start_row+row_delta, start_col+col_change_signed, colour)){
+				return false;
 			}
 		}
 	}

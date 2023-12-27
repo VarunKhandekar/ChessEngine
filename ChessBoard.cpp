@@ -203,6 +203,8 @@ std::string ChessBoard::getBlackKingPos() const{
 	return black_king_pos;
 }
 
+
+/* A function to get the location of the square that a pawn needs to move into to perform en passant */
 std::string ChessBoard::getEnPassantTarget() const{
 	return en_passant_target;
 }
@@ -348,46 +350,6 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 	}
 }
 
-/* A function to update the array which contains the locations of pawns on the board */
-void ChessBoard::updatePawnPositions(const std::string start_pos, const std::string end_pos){
-	// check if a pawn was captured
-	if (inArray(end_pos, pawn_positions, 16) != -1){
-		pawn_positions[inArray(end_pos, pawn_positions, 16)] = "";
-	}
-	// check if a pawn was captured by en passant
-	else if (inArray(start_pos, pawn_positions, 16) != -1 && end_pos == en_passant_target){
-		pawn_positions[inArray(en_passant_pawn_pos, pawn_positions, 16)] = "";
-	}
-	// now make update if we were moving a pawn in the first place
-	if (inArray(start_pos, pawn_positions, 16) != -1){
-		pawn_positions[inArray(start_pos, pawn_positions, 16)] = end_pos;
-	}
-}
-
-/* A function to set the en passant status for the board. Sets if a pawn moves 2, resets otherwise */
-void ChessBoard::setEnPassantStatus(const std::string start_pos, const std::string end_pos) {
-	// by the time this function is used, we are assuming the move is valid and doable
-	int	start_row = posToRow(start_pos);
-	int	start_col = posToCol(start_pos);
-	int	end_row = posToRow(end_pos);
-	//int end_col = posToCol(end_pos);
-
-	int row_delta = end_row-start_row;
-
-	// check if the piece is a pawn moving forwards by 2
-	if (inArray(start_pos, pawn_positions, 16) < 16 && std::abs(row_delta) == 2){
-		en_passant_target = rowColToPos(start_row + row_delta/2, start_col);
-		en_passant_pawn_pos = end_pos;
-		// now we can update pawn positions as we have now checked whether the start_pos is a pawn
-		updatePawnPositions(start_pos, end_pos);
-	}
-	// the piece is not a pawn moving 2 spaces, so en passant states revert to 'nothing'
-	else {
-		updatePawnPositions(start_pos, end_pos);
-		en_passant_target = "";
-		en_passant_pawn_pos = "";
-	}
-}
 
 /* A function to delete all heap pointers on our board and assign them to NULL */
 void ChessBoard::destroyBoard(){
@@ -415,10 +377,25 @@ void ChessBoard::updateKingPosition(const std::string start_pos, const std::stri
 }
 
 
+/* A function to check if a given move is one that leads to pawn promotion */
+bool ChessBoard::pawnPromotion(const int start_row, const int start_col, const int end_row, const int end_col){
+	// check if piece that was moving was a pawn
+	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) != -1){
+		if (getPiece(start_row, start_col)->getColour() == WHITE && end_row == 0){
+			return true;
+		}
+		else if (getPiece(start_row, start_col)->getColour() == BLACK && end_row == 7){
+			return true;
+		}
+	}
+	return false;
+}
+
+
 /* A function to move the pieces around on board. It moves a piece from the start position to the end position */
 void ChessBoard::makeBoardMove(const int start_row, const int start_col, const int end_row, const int end_col){
 	// extra logic for en passant
-	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) < 16 && 
+	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) != -1 && 
 			rowColToPos(end_row, end_col) == en_passant_target){
 		delete board[posToRow(en_passant_pawn_pos)][posToCol(en_passant_pawn_pos)];
 		board[posToRow(en_passant_pawn_pos)][posToCol(en_passant_pawn_pos)] = nullptr; //no dangling pointer
@@ -426,7 +403,43 @@ void ChessBoard::makeBoardMove(const int start_row, const int start_col, const i
 	else {
 		delete board[end_row][end_col];
 	}
-	board[end_row][end_col] = board[start_row][start_col];
+
+	// check if we need to do a pawn promotion or not
+	if (pawnPromotion(start_row, start_col, end_row, end_col)){
+		char piece;
+		std::cout << "Pawn is being promoted.";
+		do
+		{
+			std::cout << "Please enter the piece you would like (Q, R, B or N): " << std::endl;
+			std::cin >> piece;
+			switch(piece){
+				case 'Q': board[end_row][end_col] = new Queen(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'q': board[end_row][end_col] = new Queen(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'R': board[end_row][end_col] = new Rook(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'r': board[end_row][end_col] = new Rook(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'B': board[end_row][end_col] = new Bishop(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'b': board[end_row][end_col] = new Bishop(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'N': board[end_row][end_col] = new Knight(getPiece(start_row, start_col)->getColour());
+						  break;
+				case 'n': board[end_row][end_col] = new Knight(getPiece(start_row, start_col)->getColour());
+						  break;
+				default: std::cout << piece << " is not a correct letter. Please try again." << std::endl;
+						 piece = '0';
+						 break;
+			}
+		}
+		while (piece == '0');
+	}
+	else {
+		board[end_row][end_col] = board[start_row][start_col];
+	}
+	
 	board[start_row][start_col] = nullptr;
 }
 
@@ -460,7 +473,6 @@ bool ChessBoard::tryMove(const std::string start_pos, const std::string end_pos)
 		end_piece = getPiece(en_passant_pawn_row, en_passant_pawn_col);
 		board[en_passant_pawn_row][en_passant_pawn_col] = nullptr;
 	}
-	
 	
 	// Special logic for if we move the king. This needs to be done to check subsequent checks 
 	// and be able to revert the king position if the move is not feasible
@@ -624,6 +636,48 @@ bool ChessBoard::tryCastleMove(const std::string start_pos, const std::string en
 }
 
 
+/* A function to update the array which contains the locations of pawns on the board */
+void ChessBoard::updatePawnPositions(const std::string start_pos, const std::string end_pos){
+	// check if a pawn was captured
+	if (inArray(end_pos, pawn_positions, 16) != -1){
+		pawn_positions[inArray(end_pos, pawn_positions, 16)] = "";
+	}
+	// check if a pawn was captured by en passant
+	else if (inArray(start_pos, pawn_positions, 16) != -1 && end_pos == en_passant_target){
+		pawn_positions[inArray(en_passant_pawn_pos, pawn_positions, 16)] = "";
+	}
+	// now make update if we were moving a pawn in the first place
+	if (inArray(start_pos, pawn_positions, 16) != -1){
+		pawn_positions[inArray(start_pos, pawn_positions, 16)] = end_pos;
+	}
+}
+
+/* A function to set the en passant status for the board. Sets if a pawn moves 2, resets otherwise */
+void ChessBoard::setEnPassantStatus(const std::string start_pos, const std::string end_pos) {
+	// by the time this function is used, we are assuming the move is valid and doable
+	int	start_row = posToRow(start_pos);
+	int	start_col = posToCol(start_pos);
+	int	end_row = posToRow(end_pos);
+	//int end_col = posToCol(end_pos);
+
+	int row_delta = end_row-start_row;
+
+	// check if the piece is a pawn moving forwards by 2
+	if (inArray(start_pos, pawn_positions, 16) < 16 && std::abs(row_delta) == 2){
+		en_passant_target = rowColToPos(start_row + row_delta/2, start_col);
+		en_passant_pawn_pos = end_pos;
+		// now we can update pawn positions as we have now checked whether the start_pos is a pawn
+		updatePawnPositions(start_pos, end_pos);
+	}
+	// the piece is not a pawn moving 2 spaces, so en passant states revert to 'nothing'
+	else {
+		updatePawnPositions(start_pos, end_pos);
+		en_passant_target = "-";
+		en_passant_pawn_pos = "-";
+	}
+}
+
+
 /* A function to check if a particular colour is in check */
 bool ChessBoard::isCheck(Colour colour){
 	// get king starting position
@@ -772,4 +826,3 @@ bool ChessBoard::isStalemate(Colour colour){
 	}
 	return true;
 }
-
