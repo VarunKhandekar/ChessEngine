@@ -11,7 +11,7 @@ int main() {
 	cout << "========================\n\n";
 
 	ChessBoard cb;
-	cb.loadState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq");
+	cb.loadState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	cout << '\n';
 
 	cb.submitMove("D7", "D6");
@@ -30,7 +30,7 @@ int main() {
 	cout << "Alekhine vs. Vasic (1931)\n";
 	cout << "=========================\n\n";
 
-	cb.loadState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq");
+	cb.loadState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	cout << '\n';
 
 	cb.submitMove("E2", "E4");

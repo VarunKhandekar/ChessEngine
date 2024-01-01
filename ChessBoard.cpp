@@ -152,6 +152,15 @@ void ChessBoard::loadState(const std::string state){
 		}
 	}
 
+	// check element 3 to get en passant info 
+	en_passant_target = output[3];
+
+	// check element 4 to get the half move count
+	half_move_clock = std::stoi(output[4]);
+
+	// check element 5 to get the full move count
+	full_move_counter = std::stoi(output[5]);
+
 	std::cout << "A new board state is loaded!" << std::endl;
 }
 
@@ -255,10 +264,21 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 		return;
 	}
 
+	if (half_move_clock >= 50){
+		char draw;
+		std::cout << "The fifty-move rule has been met. Would " << turn << " like a draw (y or n?" << std::endl;
+		std::cin >> draw;
+		if (draw == 'y'){
+			std::cout << "The match is drawn." << std::endl;
+			return;
+		}
+	}
+
 	// See what sort of move we are making. We have different logic if it is a castle
 	// If it is a castle move
 	if (isCastleMove(start_pos, end_pos)){
 		if (tryCastleMove(start_pos, end_pos)){
+			half_move_clock++;
 			// get character output for which side we're castling to
 			std::string side = ((posToCol(end_pos) - posToCol(start_pos)) == 2) ? "king" : "queen";
 			std::cout << getPiece(start_row, start_col) << " castles to the " << side << "'s side" << std::endl;
@@ -286,11 +306,14 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 	// Regular and en passant move
 	else {
 		if (tryMove(start_pos, end_pos)){
+			half_move_clock++;
 			std::cout << getPiece(start_row, start_col) << " moves from " << start_pos << " to " << end_pos;
 			if (getPiece(end_row, end_col) != nullptr){
+				half_move_clock = 0;
 				std::cout << " taking " << getPiece(end_row, end_col);		
 			}
 			else if (end_pos == en_passant_target){
+				half_move_clock = 0;
 				std::cout << " taking " << getPiece(posToRow(en_passant_pawn_pos), posToCol(en_passant_pawn_pos));
 				std::cout << " by en passant";
 			}
@@ -316,7 +339,7 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 			makeBoardMove(start_row, start_col, end_row, end_col);
 
 			// sets or resets the board's en passant status as required
-			// also updates the board's pawn positions
+			// also updates the board's pawn positions and the half move clock if needed
 			setEnPassantStatus(start_pos, end_pos);
 		}
 		// Otherwise return error message
@@ -326,8 +349,14 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 		}
 	}
 
+	
+
 	//now the move has been made change turn
 	turn = (turn == WHITE) ? BLACK : WHITE;
+
+	if (turn == BLACK){
+		full_move_counter++;
+	}
 	
 	// Check if the opponent is now in check
 	// if yes, Check if the opponent is in checkmate
@@ -348,6 +377,11 @@ void ChessBoard::submitMove(const std::string start_pos, const std::string end_p
 			return;
 		}
 	}
+	if (half_move_clock == 75){
+		std::cout << "The half-move clock has reached 75. The game is now drawn" << std::endl;
+		return;
+	}
+	
 }
 
 
@@ -374,21 +408,6 @@ void ChessBoard::updateKingPosition(const std::string start_pos, const std::stri
 		black_castle_k = false;
 		black_castle_q = false;
 	}
-}
-
-
-/* A function to check if a given move is one that leads to pawn promotion */
-bool ChessBoard::pawnPromotion(const int start_row, const int start_col, const int end_row, const int end_col){
-	// check if piece that was moving was a pawn
-	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) != -1){
-		if (getPiece(start_row, start_col)->getColour() == WHITE && end_row == 0){
-			return true;
-		}
-		else if (getPiece(start_row, start_col)->getColour() == BLACK && end_row == 7){
-			return true;
-		}
-	}
-	return false;
 }
 
 
@@ -636,6 +655,21 @@ bool ChessBoard::tryCastleMove(const std::string start_pos, const std::string en
 }
 
 
+/* A function to check if a given move is one that leads to pawn promotion */
+bool ChessBoard::pawnPromotion(const int start_row, const int start_col, const int end_row, const int end_col){
+	// check if piece that was moving was a pawn
+	if (inArray(rowColToPos(start_row, start_col), pawn_positions, 16) != -1){
+		if (getPiece(start_row, start_col)->getColour() == WHITE && end_row == 0){
+			return true;
+		}
+		else if (getPiece(start_row, start_col)->getColour() == BLACK && end_row == 7){
+			return true;
+		}
+	}
+	return false;
+}
+
+
 /* A function to update the array which contains the locations of pawns on the board */
 void ChessBoard::updatePawnPositions(const std::string start_pos, const std::string end_pos){
 	// check if a pawn was captured
@@ -649,8 +683,11 @@ void ChessBoard::updatePawnPositions(const std::string start_pos, const std::str
 	// now make update if we were moving a pawn in the first place
 	if (inArray(start_pos, pawn_positions, 16) != -1){
 		pawn_positions[inArray(start_pos, pawn_positions, 16)] = end_pos;
+		// reset half move clock
+		half_move_clock = 0;
 	}
 }
+
 
 /* A function to set the en passant status for the board. Sets if a pawn moves 2, resets otherwise */
 void ChessBoard::setEnPassantStatus(const std::string start_pos, const std::string end_pos) {

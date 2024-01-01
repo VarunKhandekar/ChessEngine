@@ -104,6 +104,12 @@ class ChessBoard {
 		bool black_castle_k;
 		bool black_castle_q;
 
+		/* Integer to keep track of the half move clock */
+		int half_move_clock;
+
+		/* Integer to keep track of the number of full moves */
+		int full_move_counter;
+
 		/* An array to hold pawn positions */
 		std::string pawn_positions[16];
 

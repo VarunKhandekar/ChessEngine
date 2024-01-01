@@ -163,35 +163,35 @@ int main(){
 	
 
 	cout << "========================================" <<std::endl;
-	string d = "kbQ5/8/2K5/8/8/8/8/8 w ----";
+	string d = "kbQ5/8/2K5/8/8/8/8/8 w ---- - 0 1";
 	cb.loadState(d);
 
 	cb.submitMove("C6", "B6");
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;
-	string e = "r3k3/8/8/8/8/8/8/7K b ---q";
+	string e = "r3k3/8/8/8/8/8/8/7K b ---q - 0 1";
 	cb.loadState(e);
 
 	cb.submitMove("E8", "C8");
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;
-	string f = "rnbqkbnr/ppp1pppp/4P3/3p4/8/8/PPPP1PPP/RNBQKBNR w KQkq";
+	string f = "rnbqkbnr/ppp1pppp/4P3/3p4/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1";
 	cb.loadState(f);
 
 	cb.submitMove("E6", "F7");
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;
-	string g = "r3k3/4Q3/8/8/8/8/8/7K b ---q";
+	string g = "r3k3/4Q3/8/8/8/8/8/7K b ---q - 0 1";
 	cb.loadState(g);
 
 	cb.submitMove("E8", "C8");
 	cb.displayBoard();
 	
 	cout << "\n\n========================================" <<std::endl;
-	string h = "r3k3/4Q3/8/8/8/8/8/7K b ---q";
+	string h = "r3k3/4Q3/8/8/8/8/8/7K b ---q - 0 1";
 	cb.loadState(h);
 
 	cb.submitMove("E8", "C8");
